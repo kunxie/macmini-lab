@@ -20,6 +20,7 @@ and `33`.
 | 31 | `scripts/k8s/31-install-observability.sh` | Ubuntu VM | Manual recovery path; installs the pinned observability charts without Argo CD. |
 | 32 | `scripts/k8s/32-configure-observability-secret.sh` | Ubuntu VM | Creates or updates Grafana credentials outside Git. |
 | 33 | `scripts/k8s/33-bootstrap-gitops.sh` | Ubuntu VM | Registers the root Argo CD Application after the Git changes are pushed. |
+| 34 | `scripts/k8s/34-configure-tailscale-operator-secret.sh` | Ubuntu VM | Interactively creates or updates the Tailscale Operator OAuth Secret outside Git. |
 | 40 | `scripts/k8s/40-install-cloudflared.sh` | Ubuntu VM | Optional later, after obtaining a domain and tunnel token. |
 | 80 | `scripts/ubuntu/80-mount-data-disk.sh` | Ubuntu VM | Optional later, when adding an external SSD. |
 | 90 | `scripts/k8s/90-uninstall-observability.sh` | Ubuntu VM | Removes observability releases but keeps their PVCs. |
