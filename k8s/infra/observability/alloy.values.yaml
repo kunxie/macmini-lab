@@ -2,7 +2,9 @@ controller:
   type: daemonset
 
 serviceMonitor:
-  enabled: true
+  # Avoid an initial dependency on the ServiceMonitor CRD. Log collection does
+  # not require Alloy to expose its own metrics to Prometheus.
+  enabled: false
 
 alloy:
   configMap:

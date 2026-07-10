@@ -1,5 +1,21 @@
 fullnameOverride: kube-prometheus-stack
 
+# K3s embeds these control-plane components and does not expose the standard
+# endpoints expected by kube-prometheus-stack. Disabling them also keeps this
+# Application scoped to the observability namespace.
+kubeApiServer:
+  enabled: true
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+coreDns:
+  enabled: false
+
 grafana:
   enabled: true
   admin:
