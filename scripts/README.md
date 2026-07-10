@@ -2,7 +2,8 @@
 
 Script numbers are unique across the repository. For the initial installation,
 you normally run only `00`, complete the interactive Ubuntu installation, run
-`10`, and then install add-ons with `30` and `31`.
+`10`, install Argo CD with `30`, then configure and bootstrap GitOps with `32`
+and `33`.
 
 | Number | Script | Run in | When to use it |
 | --- | --- | --- | --- |
@@ -16,7 +17,9 @@ you normally run only `00`, complete the interactive Ubuntu installation, run
 | 12 | `scripts/ubuntu/12-install-tailscale.sh` | Ubuntu VM | Called by `10`; connects the VM to your tailnet. |
 | 20 | `scripts/k3s/20-install-k3s.sh` | Ubuntu VM | Called by `10`; installs the single-node K3s cluster. |
 | 30 | `scripts/k8s/30-install-argocd.sh` | Ubuntu VM | After `10`; installs Argo CD. |
-| 31 | `scripts/k8s/31-install-observability.sh` | Ubuntu VM | After `30`; installs Prometheus, Grafana, Loki, and Alloy. |
+| 31 | `scripts/k8s/31-install-observability.sh` | Ubuntu VM | Manual recovery path; installs the pinned observability charts without Argo CD. |
+| 32 | `scripts/k8s/32-configure-observability-secret.sh` | Ubuntu VM | Creates or updates Grafana credentials outside Git. |
+| 33 | `scripts/k8s/33-bootstrap-gitops.sh` | Ubuntu VM | Registers the root Argo CD Application after the Git changes are pushed. |
 | 40 | `scripts/k8s/40-install-cloudflared.sh` | Ubuntu VM | Optional later, after obtaining a domain and tunnel token. |
 | 80 | `scripts/ubuntu/80-mount-data-disk.sh` | Ubuntu VM | Optional later, when adding an external SSD. |
 | 90 | `scripts/k8s/90-uninstall-observability.sh` | Ubuntu VM | Removes observability releases but keeps their PVCs. |
@@ -42,5 +45,9 @@ Then run inside Ubuntu:
 ```bash
 ./scripts/10-setup-ubuntu.sh
 ./scripts/k8s/30-install-argocd.sh
-GRAFANA_ADMIN_PASSWORD='choose-a-password' ./scripts/k8s/31-install-observability.sh
+GRAFANA_ADMIN_PASSWORD='choose-a-password' ./scripts/k8s/32-configure-observability-secret.sh
+./scripts/k8s/33-bootstrap-gitops.sh
 ```
+
+Script `31` remains available when Argo CD is unavailable. Do not manage the
+same observability releases with script `31` and Argo CD at the same time.

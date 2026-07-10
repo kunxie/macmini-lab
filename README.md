@@ -112,11 +112,14 @@ is a separate guest operating system.
    ./scripts/macos/04-enable-utm-autostart.sh
    ```
 
-8. Install the cluster add-ons inside Ubuntu:
+8. Install Argo CD, create the Grafana Secret, and bootstrap the GitOps root
+   Application inside Ubuntu. Push the GitOps files to `main` before the final
+   command because Argo CD reads the public GitHub repository:
 
    ```bash
    ./scripts/k8s/30-install-argocd.sh
-   GRAFANA_ADMIN_PASSWORD='choose-a-password' ./scripts/k8s/31-install-observability.sh
+   GRAFANA_ADMIN_PASSWORD='choose-a-password' ./scripts/k8s/32-configure-observability-secret.sh
+   ./scripts/k8s/33-bootstrap-gitops.sh
    ```
 
 9. Skip external storage for now. When the internal disk becomes tight, mount an
@@ -146,6 +149,34 @@ k8s/                  Cluster manifests, Helm values, and app definitions
 
 See [scripts/README.md](scripts/README.md) for the globally numbered execution
 order and an explanation of which scripts are optional.
+
+## Namespace Strategy
+
+Use namespaces as lifecycle, ownership, and access boundaries. Do not create a
+namespace for every individual pod or minor component.
+
+```text
+kube-system      K3s system components
+argocd           Argo CD deployment control plane
+observability    Prometheus, Grafana, Loki, Alloy, and Alertmanager
+data             Shared Postgres, Redis, and MinIO services
+<app-name>       Resources owned by one deployed application
+```
+
+Prometheus, Grafana, Loki, Alloy, and Alertmanager share the `observability`
+namespace because they form one operational stack. Argo CD uses its own
+`argocd` namespace because it manages deployments across the cluster.
+
+Start shared stateful services in a single `data` namespace, and install each
+service only when an application requires it. Split Postgres, Redis, or MinIO
+into dedicated namespaces later if they need independent access policies,
+backup procedures, or upgrade lifecycles. Give each application its own
+namespace so its Deployments, Services, ConfigMaps, and Secrets remain grouped.
+
+Namespaces separate resource names and provide boundaries for RBAC, quotas, and
+NetworkPolicies. They do not automatically provide physical storage isolation,
+runtime isolation, network isolation without policies, or CPU and memory limits
+without resource settings.
 
 ## Assumptions
 

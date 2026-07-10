@@ -1,4 +1,4 @@
-.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install cloudflared-install observability-install observability-uninstall check
+.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install observability-secret gitops-bootstrap cloudflared-install observability-install observability-uninstall check
 
 help:
 	@echo "Common commands:"
@@ -8,8 +8,10 @@ help:
 	@echo "  make tailscale-install    Install Tailscale in Ubuntu and enable Tailscale SSH"
 	@echo "  make k3s-install          Install single-node K3s inside Ubuntu VM"
 	@echo "  make argocd-install       Install Argo CD into K3s"
+	@echo "  make observability-secret Create Grafana credentials; requires GRAFANA_ADMIN_PASSWORD"
+	@echo "  make gitops-bootstrap     Register the root Argo CD Application"
 	@echo "  make cloudflared-install  Install Cloudflare Tunnel; requires TUNNEL_TOKEN"
-	@echo "  make observability-install Install Prometheus, Grafana, Loki, and Alloy"
+	@echo "  make observability-install Manual observability install when Argo CD is unavailable"
 	@echo "  make observability-uninstall Remove observability releases; keeps PVCs"
 	@echo "  make check                Run shell syntax checks"
 
@@ -30,6 +32,12 @@ k3s-install:
 
 argocd-install:
 	./scripts/k8s/30-install-argocd.sh
+
+observability-secret:
+	./scripts/k8s/32-configure-observability-secret.sh
+
+gitops-bootstrap:
+	./scripts/k8s/33-bootstrap-gitops.sh
 
 cloudflared-install:
 	./scripts/k8s/40-install-cloudflared.sh

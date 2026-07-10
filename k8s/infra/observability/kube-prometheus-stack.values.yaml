@@ -2,8 +2,10 @@ fullnameOverride: kube-prometheus-stack
 
 grafana:
   enabled: true
-  adminUser: admin
-  adminPassword: change-me
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
   persistence:
     enabled: true
     type: pvc

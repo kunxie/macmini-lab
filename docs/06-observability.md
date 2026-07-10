@@ -14,10 +14,13 @@ when multiple services need request-level tracing.
 
 ## Install
 
-From a machine with `kubectl`, `helm`, and cluster access:
+Create the Grafana credential outside Git, then bootstrap the root Argo CD
+Application after the repository changes are pushed:
 
 ```bash
-make observability-install
+GRAFANA_ADMIN_PASSWORD='your-password' \
+  ./scripts/k8s/32-configure-observability-secret.sh
+./scripts/k8s/33-bootstrap-gitops.sh
 ```
 
 Check status:
@@ -32,26 +35,34 @@ kubectl -n observability get pvc
 For local access:
 
 ```bash
-kubectl -n observability port-forward svc/kube-prometheus-stack-grafana 3000:80
+kubectl -n observability port-forward \
+  --address="$(tailscale ip -4)" \
+  svc/kube-prometheus-stack-grafana 3000:80
 ```
 
-Then open:
+Keep that command running. From a device in the same tailnet, open the Ubuntu
+VM's Tailscale address:
 
 ```text
-http://localhost:3000
+http://MACMINI_LAB_TAILSCALE_IP:3000
 ```
 
-Default credentials:
+Find that address with `tailscale ip -4`. Binding to the Tailscale address keeps
+Grafana off the VM's normal LAN interface.
+
+Credentials:
 
 ```text
 username: admin
-password: change-me
+password: the value passed to scripts/k8s/32-configure-observability-secret.sh
 ```
 
-Change the password after install or override it before install:
+To rotate the password, run the Secret script again and restart Grafana:
 
 ```bash
-GRAFANA_ADMIN_PASSWORD='your-password' make observability-install
+GRAFANA_ADMIN_PASSWORD='your-new-password' \
+  ./scripts/k8s/32-configure-observability-secret.sh
+kubectl -n observability rollout restart deployment/kube-prometheus-stack-grafana
 ```
 
 ## Retention Defaults
