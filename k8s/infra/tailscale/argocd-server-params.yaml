@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+data:
+  # Tailscale terminates HTTPS; Argo CD serves HTTP only inside the cluster.
+  server.insecure: "true"

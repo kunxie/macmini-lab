@@ -9,6 +9,7 @@ k8s/
     applications/
   infra/
     observability/
+    tailscale/
     postgres/
     redis/
     minio/
