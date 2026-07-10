@@ -1,0 +1,44 @@
+.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install cloudflared-install observability-install observability-uninstall check
+
+help:
+	@echo "Common commands:"
+	@echo "  make macos-info           Install UTM on macOS using Homebrew"
+	@echo "  make ubuntu-iso           Download and verify Ubuntu Server ARM64 ISO"
+	@echo "  make ubuntu-bootstrap     Bootstrap packages inside Ubuntu VM"
+	@echo "  make tailscale-install    Install Tailscale in Ubuntu and enable Tailscale SSH"
+	@echo "  make k3s-install          Install single-node K3s inside Ubuntu VM"
+	@echo "  make argocd-install       Install Argo CD into K3s"
+	@echo "  make cloudflared-install  Install Cloudflare Tunnel; requires TUNNEL_TOKEN"
+	@echo "  make observability-install Install Prometheus, Grafana, Loki, and Alloy"
+	@echo "  make observability-uninstall Remove observability releases; keeps PVCs"
+	@echo "  make check                Run shell syntax checks"
+
+macos-info:
+	./scripts/macos/01-install-host-tools.sh
+
+ubuntu-iso:
+	./scripts/macos/02-download-ubuntu-iso.sh
+
+ubuntu-bootstrap:
+	./scripts/ubuntu/11-bootstrap.sh
+
+tailscale-install:
+	./scripts/ubuntu/12-install-tailscale.sh
+
+k3s-install:
+	./scripts/k3s/20-install-k3s.sh
+
+argocd-install:
+	./scripts/k8s/30-install-argocd.sh
+
+cloudflared-install:
+	./scripts/k8s/40-install-cloudflared.sh
+
+observability-install:
+	./scripts/k8s/31-install-observability.sh
+
+observability-uninstall:
+	./scripts/k8s/90-uninstall-observability.sh
+
+check:
+	bash -n scripts/*.sh scripts/macos/*.sh scripts/ubuntu/*.sh scripts/k3s/*.sh scripts/k8s/*.sh

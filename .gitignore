@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.*
+*.log
+
+# Local kubeconfigs and secrets
+*.kubeconfig
+*.key
+*.pem
+
+# Tool caches
+.terraform/
+.direnv/
