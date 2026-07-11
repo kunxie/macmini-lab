@@ -10,9 +10,24 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-data}"
 SECRET_NAME="${SECRET_NAME:-postgres-backup-s3-creds}"
 
-if [[ -z "${MINIO_ACCESS_KEY:-}" || -z "${MINIO_SECRET_KEY:-}" ]]; then
-  echo "Set MINIO_ACCESS_KEY and MINIO_SECRET_KEY before running this script."
-  echo "Example: MINIO_ACCESS_KEY='your-minio-username' MINIO_SECRET_KEY='a-long-random-password' $0"
+# Clear credentials from this process when the script exits, including on error.
+cleanup() {
+  unset MINIO_ACCESS_KEY MINIO_SECRET_KEY
+}
+trap cleanup EXIT
+
+# Environment variables support automation; interactive use avoids shell history.
+if [[ -z "${MINIO_ACCESS_KEY:-}" ]]; then
+  read -r -p "MinIO access key: " MINIO_ACCESS_KEY
+fi
+
+if [[ -z "${MINIO_SECRET_KEY:-}" ]]; then
+  read -r -s -p "MinIO secret key: " MINIO_SECRET_KEY
+  echo
+fi
+
+if [[ -z "${MINIO_ACCESS_KEY}" || -z "${MINIO_SECRET_KEY}" ]]; then
+  echo "Both the MinIO access key and secret key are required." >&2
   exit 1
 fi
 

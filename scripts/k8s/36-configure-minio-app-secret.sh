@@ -21,15 +21,24 @@ MINIO_NAMESPACE="${MINIO_NAMESPACE:-data}"
 MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio.data.svc.cluster.local:9000}"
 MINIO_ROOT_SECRET="${MINIO_ROOT_SECRET:-minio-root-credentials}"
 
+# Clear credentials from this process when the script exits, including on error.
+cleanup() {
+  unset MINIO_SECRET_KEY ROOT_USER ROOT_PASSWORD CONFIG_ENV
+}
+trap cleanup EXIT
+
+# Environment variables support automation; interactive use avoids shell history.
 if [[ -z "${APP_NAME:-}" ]]; then
-  echo "Set APP_NAME. It doubles as the namespace, bucket, and MinIO username unless overridden."
-  echo "Example: APP_NAME='job-info-collector' MINIO_SECRET_KEY='a-long-random-password' $0"
-  exit 1
+  read -r -p "App name (also the default namespace, bucket, and MinIO username): " APP_NAME
 fi
 
 if [[ -z "${MINIO_SECRET_KEY:-}" ]]; then
-  echo "Set MINIO_SECRET_KEY before running this script."
-  echo "Example: APP_NAME='job-info-collector' MINIO_SECRET_KEY='a-long-random-password' $0"
+  read -r -s -p "MinIO secret key: " MINIO_SECRET_KEY
+  echo
+fi
+
+if [[ -z "${APP_NAME}" || -z "${MINIO_SECRET_KEY}" ]]; then
+  echo "Both the app name and MinIO secret key are required." >&2
   exit 1
 fi
 

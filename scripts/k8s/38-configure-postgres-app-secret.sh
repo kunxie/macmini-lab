@@ -13,15 +13,24 @@ set -euo pipefail
 POSTGRES_NAMESPACE="${POSTGRES_NAMESPACE:-data}"
 POSTGRES_CLUSTER="${POSTGRES_CLUSTER:-postgres}"
 
+# Clear credentials from this process when the script exits, including on error.
+cleanup() {
+  unset DB_PASSWORD
+}
+trap cleanup EXIT
+
+# Environment variables support automation; interactive use avoids shell history.
 if [[ -z "${APP_NAME:-}" ]]; then
-  echo "Set APP_NAME. It doubles as the namespace, database, and role name unless overridden."
-  echo "Example: APP_NAME='job-info-collector' DB_PASSWORD='a-long-random-password' $0"
-  exit 1
+  read -r -p "App name (also the default namespace, database, and role): " APP_NAME
 fi
 
 if [[ -z "${DB_PASSWORD:-}" ]]; then
-  echo "Set DB_PASSWORD before running this script."
-  echo "Example: APP_NAME='job-info-collector' DB_PASSWORD='a-long-random-password' $0"
+  read -r -s -p "Database password: " DB_PASSWORD
+  echo
+fi
+
+if [[ -z "${APP_NAME}" || -z "${DB_PASSWORD}" ]]; then
+  echo "Both the app name and database password are required." >&2
   exit 1
 fi
 

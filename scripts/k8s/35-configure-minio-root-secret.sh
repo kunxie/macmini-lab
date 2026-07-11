@@ -6,15 +6,24 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-data}"
 SECRET_NAME="${SECRET_NAME:-minio-root-credentials}"
 
+# Clear credentials from this process when the script exits, including on error.
+cleanup() {
+  unset MINIO_ROOT_USER MINIO_ROOT_PASSWORD
+}
+trap cleanup EXIT
+
+# Environment variables support automation; interactive use avoids shell history.
 if [[ -z "${MINIO_ROOT_USER:-}" ]]; then
-  echo "Set MINIO_ROOT_USER before running this script."
-  echo "Example: MINIO_ROOT_USER='choose-a-username' MINIO_ROOT_PASSWORD='a-long-random-password' $0"
-  exit 1
+  read -r -p "MinIO root username: " MINIO_ROOT_USER
 fi
 
 if [[ -z "${MINIO_ROOT_PASSWORD:-}" ]]; then
-  echo "Set MINIO_ROOT_PASSWORD before running this script."
-  echo "Example: MINIO_ROOT_USER='choose-a-username' MINIO_ROOT_PASSWORD='a-long-random-password' $0"
+  read -r -s -p "MinIO root password: " MINIO_ROOT_PASSWORD
+  echo
+fi
+
+if [[ -z "${MINIO_ROOT_USER}" || -z "${MINIO_ROOT_PASSWORD}" ]]; then
+  echo "Both the MinIO root username and password are required." >&2
   exit 1
 fi
 
