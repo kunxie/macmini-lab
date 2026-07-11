@@ -5,11 +5,16 @@ set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-data}"
 SECRET_NAME="${SECRET_NAME:-minio-root-credentials}"
-MINIO_ROOT_USER="${MINIO_ROOT_USER:-admin}"
+
+if [[ -z "${MINIO_ROOT_USER:-}" ]]; then
+  echo "Set MINIO_ROOT_USER before running this script."
+  echo "Example: MINIO_ROOT_USER='choose-a-username' MINIO_ROOT_PASSWORD='a-long-random-password' $0"
+  exit 1
+fi
 
 if [[ -z "${MINIO_ROOT_PASSWORD:-}" ]]; then
   echo "Set MINIO_ROOT_PASSWORD before running this script."
-  echo "Example: MINIO_ROOT_PASSWORD='a-long-random-password' $0"
+  echo "Example: MINIO_ROOT_USER='choose-a-username' MINIO_ROOT_PASSWORD='a-long-random-password' $0"
   exit 1
 fi
 

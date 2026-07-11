@@ -3,7 +3,7 @@
 # the MinIO Tenant's S3 API, outside Git.
 #
 # For this personal lab, reuse the MinIO root credentials
-# (scripts/k8s/35-configure-minio-secret.sh) as the values here. Create a
+# (scripts/k8s/35-configure-minio-root-secret.sh) as the values here. Create a
 # dedicated least-privilege MinIO user instead if that ever matters to you.
 set -euo pipefail
 
@@ -12,7 +12,7 @@ SECRET_NAME="${SECRET_NAME:-postgres-backup-s3-creds}"
 
 if [[ -z "${MINIO_ACCESS_KEY:-}" || -z "${MINIO_SECRET_KEY:-}" ]]; then
   echo "Set MINIO_ACCESS_KEY and MINIO_SECRET_KEY before running this script."
-  echo "Example: MINIO_ACCESS_KEY='admin' MINIO_SECRET_KEY='a-long-random-password' $0"
+  echo "Example: MINIO_ACCESS_KEY='your-minio-username' MINIO_SECRET_KEY='a-long-random-password' $0"
   exit 1
 fi
 
