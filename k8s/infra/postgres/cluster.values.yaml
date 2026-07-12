@@ -1,0 +1,53 @@
+fullnameOverride: postgres
+
+type: postgresql
+version:
+  postgresql: "17"
+
+cluster:
+  instances: 1
+  storage:
+    size: 10Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+  enablePDB: false
+  roles:
+    - name: job-info-collector
+      ensure: present
+      login: true
+      passwordSecret:
+        name: job-info-collector-db-credentials
+  monitoring:
+    enabled: true
+  initdb:
+    database: job-info-collector
+    owner: job-info-collector
+    secret:
+      name: job-info-collector-db-credentials
+
+backups:
+  enabled: true
+  endpointURL: http://minio.data.svc.cluster.local:9000
+  destinationPath: s3://postgres-backups/
+  provider: s3
+  s3:
+    bucket: postgres-backups
+    path: /
+  secret:
+    create: false
+    name: postgres-backup-s3-creds
+  wal:
+    encryption: ""
+  data:
+    encryption: ""
+  scheduledBackups:
+    - name: daily-backup
+      schedule: "0 0 3 * * *"
+      backupOwnerReference: self
+      method: barmanObjectStore
+  retentionPolicy: 14d
