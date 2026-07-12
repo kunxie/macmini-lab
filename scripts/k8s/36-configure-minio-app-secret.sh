@@ -120,8 +120,16 @@ echo "Policy ${APP_NAME}-rw attached to ${MINIO_ACCESS_KEY}."
 # "mc admin policy attach" only adds a policy; it never removes ones the
 # user already had. Detach every other policy so a stray broad grant (e.g.
 # "readwrite", attached by hand during earlier testing) cannot linger and
-# widen this user beyond its own bucket.
-CURRENT_POLICIES="$(mc admin user info local "${MINIO_ACCESS_KEY}" --json | sed -n "s/.*\"policyName\":\"\([^\"]*\)\".*/\1/p")"
+# widen this user beyond its own bucket. Parsed with plain shell parameter
+# expansion (not sed/grep) since the minio/mc image ships neither.
+INFO_JSON="$(mc admin user info local "${MINIO_ACCESS_KEY}" --json)"
+CURRENT_POLICIES=""
+case "${INFO_JSON}" in
+  *"\"policyName\":\""*)
+    TAIL="${INFO_JSON#*\"policyName\":\"}"
+    CURRENT_POLICIES="${TAIL%%\"*}"
+    ;;
+esac
 OLD_IFS="$IFS"
 IFS=","
 for p in $CURRENT_POLICIES; do
