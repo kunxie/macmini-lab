@@ -7,6 +7,13 @@ metadata:
     argocd.argoproj.io/sync-wave: "7"
 spec:
   project: infrastructure
+  ignoreDifferences:
+    # CloudNativePG normalizes declarative roles after Argo CD applies them.
+    # The operator still owns and reconciles the role and its password Secret.
+    - group: postgresql.cnpg.io
+      kind: Cluster
+      jqPathExpressions:
+        - .spec.managed.roles
   sources:
     - repoURL: https://cloudnative-pg.github.io/charts
       chart: cluster
