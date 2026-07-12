@@ -14,7 +14,10 @@
 # no field to attach an IAM policy. This script also creates and attaches a
 # policy scoping the user to only its own bucket, using a disposable mc pod
 # run inside the cluster against the MinIO root credentials. Re-running this
-# script is safe; the policy step is idempotent.
+# script is safe; the policy step is idempotent and self-healing -- it
+# detaches any other policy the user has accumulated (e.g. a broad built-in
+# policy like "readwrite" attached by hand during earlier testing), so the
+# user is always left with only the scoped ${APP_NAME}-rw policy.
 set -euo pipefail
 
 MINIO_NAMESPACE="${MINIO_NAMESPACE:-data}"
@@ -113,6 +116,21 @@ POLICY
 mc admin policy create local "${APP_NAME}-rw" /tmp/policy.json
 mc admin policy attach local "${APP_NAME}-rw" --user="${MINIO_ACCESS_KEY}"
 echo "Policy ${APP_NAME}-rw attached to ${MINIO_ACCESS_KEY}."
+
+# "mc admin policy attach" only adds a policy; it never removes ones the
+# user already had. Detach every other policy so a stray broad grant (e.g.
+# "readwrite", attached by hand during earlier testing) cannot linger and
+# widen this user beyond its own bucket.
+CURRENT_POLICIES="$(mc admin user info local "${MINIO_ACCESS_KEY}" --json | sed -n "s/.*\"policyName\":\"\([^\"]*\)\".*/\1/p")"
+OLD_IFS="$IFS"
+IFS=","
+for p in $CURRENT_POLICIES; do
+  if [ -n "$p" ] && [ "$p" != "${APP_NAME}-rw" ]; then
+    echo "Detaching stray policy ${p} from ${MINIO_ACCESS_KEY}..."
+    mc admin policy detach local "$p" --user="${MINIO_ACCESS_KEY}"
+  fi
+done
+IFS="$OLD_IFS"
 '
 
 echo "Done."
