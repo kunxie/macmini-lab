@@ -21,6 +21,11 @@ and `33`.
 | 32 | `scripts/k8s/32-configure-observability-secret.sh` | Ubuntu VM | Creates or updates Grafana credentials outside Git. |
 | 33 | `scripts/k8s/33-bootstrap-gitops.sh` | Ubuntu VM | Registers the root Argo CD Application after the Git changes are pushed. |
 | 34 | `scripts/k8s/34-configure-tailscale-operator-secret.sh` | Ubuntu VM | Interactively creates or updates the Tailscale Operator OAuth Secret outside Git. |
+| 35 | `scripts/k8s/35-configure-minio-root-secret.sh` | Ubuntu VM | Creates or updates the MinIO root credentials outside Git. |
+| 36 | `scripts/k8s/36-configure-minio-app-secret.sh` | Ubuntu VM | Creates an app-scoped MinIO user, bucket policy, and credentials. |
+| 37 | `scripts/k8s/37-configure-postgres-backup-secret.sh` | Ubuntu VM | Creates a bucket-scoped MinIO user for PostgreSQL backups. |
+| 38 | `scripts/k8s/38-configure-postgres-app-secret.sh` | Ubuntu VM | Creates an app-scoped PostgreSQL role and credentials. |
+| 39 | `scripts/k8s/39-configure-pgadmin-secret.sh` | Ubuntu VM | Creates or updates the pgAdmin web login outside Git. |
 | 40 | `scripts/k8s/40-install-cloudflared.sh` | Ubuntu VM | Optional later, after obtaining a domain and tunnel token. |
 | 80 | `scripts/ubuntu/80-mount-data-disk.sh` | Ubuntu VM | Optional later, when adding an external SSD. |
 | 90 | `scripts/k8s/90-uninstall-observability.sh` | Ubuntu VM | Removes observability releases but keeps their PVCs. |

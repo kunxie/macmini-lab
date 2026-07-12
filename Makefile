@@ -1,4 +1,4 @@
-.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install observability-secret gitops-bootstrap tailscale-operator-secret cloudflared-install observability-install observability-uninstall check
+.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install observability-secret gitops-bootstrap tailscale-operator-secret pgadmin-secret cloudflared-install observability-install observability-uninstall check
 
 help:
 	@echo "Common commands:"
@@ -11,6 +11,7 @@ help:
 	@echo "  make observability-secret Create Grafana credentials; requires GRAFANA_ADMIN_PASSWORD"
 	@echo "  make gitops-bootstrap     Register the root Argo CD Application"
 	@echo "  make tailscale-operator-secret Create the Tailscale Operator OAuth Secret"
+	@echo "  make pgadmin-secret       Create the pgAdmin web login Secret"
 	@echo "  make cloudflared-install  Install Cloudflare Tunnel; requires TUNNEL_TOKEN"
 	@echo "  make observability-install Manual observability install when Argo CD is unavailable"
 	@echo "  make observability-uninstall Remove observability releases; keeps PVCs"
@@ -42,6 +43,9 @@ gitops-bootstrap:
 
 tailscale-operator-secret:
 	./scripts/k8s/34-configure-tailscale-operator-secret.sh
+
+pgadmin-secret:
+	./scripts/k8s/39-configure-pgadmin-secret.sh
 
 cloudflared-install:
 	./scripts/k8s/40-install-cloudflared.sh
