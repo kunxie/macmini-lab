@@ -32,7 +32,7 @@ cluster:
 
 backups:
   enabled: true
-  endpointURL: http://minio.data.svc.cluster.local:9000
+  endpointURL: http://minio.data.svc.cluster.local
   destinationPath: s3://postgres-backups/
   provider: s3
   s3:

@@ -18,7 +18,7 @@
 set -euo pipefail
 
 MINIO_NAMESPACE="${MINIO_NAMESPACE:-data}"
-MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio.data.svc.cluster.local:9000}"
+MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio.data.svc.cluster.local}"
 MINIO_ROOT_SECRET="${MINIO_ROOT_SECRET:-minio-root-credentials}"
 
 # Clear credentials from this process when the script exits, including on error.
