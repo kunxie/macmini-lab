@@ -8,9 +8,9 @@ metadata:
 spec:
   project: infrastructure
   sources:
-    - repoURL: https://github.com/minio/operator.git
-      targetRevision: v7.1.1
-      path: helm/tenant
+    - repoURL: https://github.com/kunxie/macmini-lab.git
+      targetRevision: main
+      path: k8s/vendor/minio/tenant
       helm:
         releaseName: minio
         valueFiles:
