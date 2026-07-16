@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: job-info-collector-release
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/name: job-info-collector
+    app.kubernetes.io/part-of: job-info-collector
+    app.kubernetes.io/version: "0.3.0.dev0"
+  annotations:
+    job-info-collector.kunxie.dev/source-revision: "26cff0efdab7b6b16450d004ed28e1ca39451bfe"
+    job-info-collector.kunxie.dev/image-digest: "sha256:dcabe359d9820d8ef13b9754713f5460fde42202ba5b81c7112f722a59dc9bae"
+data:
+  applicationVersion: "0.3.0.dev0"
+  sourceRevision: "26cff0efdab7b6b16450d004ed28e1ca39451bfe"
+  sourceCreatedAt: "2026-07-15T00:06:08Z"
+  imageRepository: "ghcr.io/kunxie/job-info-collector"
+  imageDigest: "sha256:dcabe359d9820d8ef13b9754713f5460fde42202ba5b81c7112f722a59dc9bae"
+  imageReference: "ghcr.io/kunxie/job-info-collector@sha256:dcabe359d9820d8ef13b9754713f5460fde42202ba5b81c7112f722a59dc9bae"
+  platform: "linux/arm64"
+  publicationRecordSha256: "40bf669dbd55da588520e6b3bf174fa9207ed1f00acb177add527fb27acf984a"
+  publicationRun: "https://github.com/kunxie/job-info-collector/actions/runs/29378262120"
+  ciRun: "https://github.com/kunxie/job-info-collector/actions/runs/29378077143"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-info-collector-release-verification
+  labels:
+    app.kubernetes.io/component: release-verification
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/name: job-info-collector
+    app.kubernetes.io/part-of: job-info-collector
+    app.kubernetes.io/version: "0.3.0.dev0"
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    job-info-collector.kunxie.dev/source-revision: "26cff0efdab7b6b16450d004ed28e1ca39451bfe"
+    job-info-collector.kunxie.dev/image-digest: "sha256:dcabe359d9820d8ef13b9754713f5460fde42202ba5b81c7112f722a59dc9bae"
+    job-info-collector.kunxie.dev/publication-run: "https://github.com/kunxie/job-info-collector/actions/runs/29378262120"
+spec:
+  activeDeadlineSeconds: 300
+  backoffLimit: 1
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: release-verification
+        app.kubernetes.io/name: job-info-collector
+        app.kubernetes.io/part-of: job-info-collector
+        app.kubernetes.io/version: "0.3.0.dev0"
+      annotations:
+        job-info-collector.kunxie.dev/source-revision: "26cff0efdab7b6b16450d004ed28e1ca39451bfe"
+        job-info-collector.kunxie.dev/image-digest: "sha256:dcabe359d9820d8ef13b9754713f5460fde42202ba5b81c7112f722a59dc9bae"
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: release-verification
+          image: ghcr.io/kunxie/job-info-collector@sha256:dcabe359d9820d8ef13b9754713f5460fde42202ba5b81c7112f722a59dc9bae
+          imagePullPolicy: Always
+          args:
+            - --version
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
