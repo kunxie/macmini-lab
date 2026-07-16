@@ -16,7 +16,7 @@ help:
 	@echo "  make observability-install Manual observability install when Argo CD is unavailable"
 	@echo "  make observability-uninstall Remove observability releases; keeps PVCs"
 	@echo "  make check                Run shell syntax checks"
-	@echo "  make gitops-check         Validate the job-info-collector GitOps foundation"
+	@echo "  make gitops-check         Validate the GitOps-managed workloads"
 
 macos-info:
 	./scripts/macos/01-install-host-tools.sh
@@ -62,3 +62,4 @@ check:
 
 gitops-check:
 	./scripts/k8s/41-validate-job-info-collector.sh
+	./scripts/k8s/42-validate-headlamp.sh
