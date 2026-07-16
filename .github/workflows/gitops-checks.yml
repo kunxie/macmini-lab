@@ -1,0 +1,60 @@
+name: GitOps checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitops-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  KUBECONFORM_VERSION: v0.8.0
+  KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+  # Validation dependency only; collector promotions do not change this revision.
+  KUBERNETES_SCHEMA_REVISION: 5a65d88146aaabf1648f5a21fca28b6abf196f83
+  KUBECTL_VERSION: v1.36.2
+  KUBECTL_SHA256: 1e9045ec32bea85da43de85f0065358529ea7c7a152eca78154fba5b58c27d82
+
+jobs:
+  collector-manifests:
+    name: collector manifests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the proposed GitOps state
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install the pinned Kubernetes client
+        run: |
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl --fail --location --silent --show-error \
+            --output "${RUNNER_TEMP}/kubectl" \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          echo "${KUBECTL_SHA256}  ${RUNNER_TEMP}/kubectl" | sha256sum --check
+          install -m 0755 "${RUNNER_TEMP}/kubectl" "${RUNNER_TEMP}/bin/kubectl"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+
+      - name: Install the pinned Kubernetes schema validator
+        run: |
+          curl --fail --location --silent --show-error \
+            --output "${RUNNER_TEMP}/kubeconform.tar.gz" \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  ${RUNNER_TEMP}/kubeconform.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "${RUNNER_TEMP}/kubeconform.tar.gz" \
+            --directory "${RUNNER_TEMP}/bin" kubeconform
+
+      - name: Check repository scripts
+        run: make check
+
+      - name: Render and validate the collector foundation
+        env:
+          CHECK_IMAGE_PLATFORM: "true"
+        run: make gitops-check

@@ -14,13 +14,18 @@ k8s/
     redis/
     minio/
   apps/
-    example-app/
+    job-info-collector/
 ```
 
 Keep generated secrets out of Git. Prefer SOPS + age for encrypted secrets once
 you start storing real credentials.
 
-The root Application watches only `k8s/argocd/applications`. Each child
-Application points at one pinned Helm chart and reads its values from
-`k8s/infra`. Apply the root once with `scripts/k8s/33-bootstrap-gitops.sh`;
+The root Application watches only `k8s/argocd/applications`. Infrastructure
+child Applications point at pinned Helm charts and read their values from
+`k8s/infra`; application child Applications point at Kustomize directories in
+`k8s/apps`. Apply the root once with `scripts/k8s/33-bootstrap-gitops.sh`;
 Argo CD handles subsequent changes from `main`.
+
+The `job-info-collector` foundation and its release procedure are documented in
+[`docs/08-job-info-collector.md`](../docs/08-job-info-collector.md). Run
+`make gitops-check` before proposing a collector release change.

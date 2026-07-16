@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: job-info-collector
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "9"
+spec:
+  description: Production resources owned by job-info-collector
+  sourceRepos:
+    - https://github.com/kunxie/macmini-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: job-info-collector
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: batch
+      kind: Job
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+  orphanedResources:
+    warn: true
