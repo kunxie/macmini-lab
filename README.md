@@ -160,6 +160,7 @@ kube-system      K3s system components
 argocd           Argo CD deployment control plane
 observability    Prometheus, Grafana, Loki, Alloy, and Alertmanager
 tailscale        Tailscale Operator and private ingress proxies
+headlamp         Read-only Kubernetes dashboard
 data             Shared Postgres, Redis, and MinIO services
 <app-name>       Resources owned by one deployed application
 ```

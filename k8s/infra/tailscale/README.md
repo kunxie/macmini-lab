@@ -1,9 +1,9 @@
 # Private Tailscale Access
 
 The Tailscale Kubernetes Operator exposes Grafana, Argo CD, the MinIO Console,
-and pgAdmin only to devices in the tailnet. Each `Ingress` receives a private
-MagicDNS hostname and a valid HTTPS certificate. Tailscale Funnel is not
-enabled.
+pgAdmin, and Headlamp only to devices in the tailnet. Each `Ingress` receives a
+private MagicDNS hostname and a valid HTTPS certificate. Tailscale Funnel is
+not enabled.
 
 Before Argo CD installs the Operator, create its OAuth Secret outside Git:
 

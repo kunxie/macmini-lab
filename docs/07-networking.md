@@ -25,6 +25,7 @@ Use this for:
 - SSH to the Ubuntu VM;
 - private Grafana access;
 - private Argo CD access;
+- private Headlamp Kubernetes dashboard access;
 - private Kubernetes API access;
 - debugging services with `kubectl port-forward`.
 
@@ -51,7 +52,7 @@ Internet
 ## What Not To Do
 
 - Do not expose the Kubernetes API to the internet.
-- Do not expose Grafana or Argo CD publicly.
+- Do not expose Grafana, Argo CD, or Headlamp publicly.
 - Do not depend on GitHub Actions SSHing into the Mac mini.
 - Do not depend on router port forwarding.
 - Do not require a stable LAN IP for CI/CD.

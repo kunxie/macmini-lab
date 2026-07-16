@@ -1,0 +1,63 @@
+replicaCount: 1
+
+image:
+  registry: ghcr.io
+  repository: headlamp-k8s/headlamp
+  tag: v0.43.0@sha256:5d03caa26df7a715079405df2949907160518750b9b62b6bf4de8d1a6142c541
+  pullPolicy: IfNotPresent
+
+config:
+  inCluster: true
+  inClusterContextName: macmini-lab
+  sessionTTL: 3600
+  unsafeUseServiceAccountToken: false
+  enableHelm: false
+  oidc:
+    secret:
+      create: false
+
+# The mounted token and CA let Headlamp construct an in-cluster API client. The
+# token is not exposed to users and this ServiceAccount has no RBAC binding.
+automountServiceAccountToken: true
+serviceAccount:
+  create: true
+  name: headlamp
+
+# The upstream chart defaults to cluster-admin. Authentication instead uses the
+# separately managed, read-only headlamp-viewer ServiceAccount.
+clusterRoleBinding:
+  create: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+
+persistentVolumeClaim:
+  enabled: false
+
+pluginsManager:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  privileged: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 100
+  runAsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault

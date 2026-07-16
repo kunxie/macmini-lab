@@ -22,9 +22,12 @@ env:
   KUBERNETES_SCHEMA_REVISION: 5a65d88146aaabf1648f5a21fca28b6abf196f83
   KUBECTL_VERSION: v1.36.2
   KUBECTL_SHA256: 1e9045ec32bea85da43de85f0065358529ea7c7a152eca78154fba5b58c27d82
+  HELM_VERSION: v3.19.4
+  HELM_SHA256: 759c656fbd9c11e6a47784ecbeac6ad1eb16a9e76d202e51163ab78504848862
 
 jobs:
   collector-manifests:
+    # Preserve this check name because branch protection may require it.
     name: collector manifests
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -51,10 +54,20 @@ jobs:
           tar --extract --gzip --file "${RUNNER_TEMP}/kubeconform.tar.gz" \
             --directory "${RUNNER_TEMP}/bin" kubeconform
 
+      - name: Install the pinned Helm client
+        run: |
+          curl --fail --location --silent --show-error \
+            --output "${RUNNER_TEMP}/helm.tar.gz" \
+            "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          echo "${HELM_SHA256}  ${RUNNER_TEMP}/helm.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "${RUNNER_TEMP}/helm.tar.gz" \
+            --directory "${RUNNER_TEMP}" linux-amd64/helm
+          install -m 0755 "${RUNNER_TEMP}/linux-amd64/helm" "${RUNNER_TEMP}/bin/helm"
+
       - name: Check repository scripts
         run: make check
 
-      - name: Render and validate the collector foundation
+      - name: Render and validate the GitOps workloads
         env:
           CHECK_IMAGE_PLATFORM: "true"
         run: make gitops-check
