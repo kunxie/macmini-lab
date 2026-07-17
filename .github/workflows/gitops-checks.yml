@@ -34,6 +34,9 @@ jobs:
     steps:
       - name: Check out the proposed GitOps state
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install the pinned Kubernetes client
         run: |
@@ -64,10 +67,19 @@ jobs:
             --directory "${RUNNER_TEMP}" linux-amd64/helm
           install -m 0755 "${RUNNER_TEMP}/linux-amd64/helm" "${RUNNER_TEMP}/bin/helm"
 
+      - name: Install ARM64 emulation for image contract verification
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          platforms: arm64
+
       - name: Check repository scripts
         run: make check
 
+      - name: Test collector validator failure modes
+        run: make gitops-validator-test
+
       - name: Render and validate the GitOps workloads
         env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
           CHECK_IMAGE_PLATFORM: "true"
         run: make gitops-check
