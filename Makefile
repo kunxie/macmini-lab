@@ -1,4 +1,4 @@
-.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install observability-secret gitops-bootstrap tailscale-operator-secret pgadmin-secret cloudflared-install observability-install observability-uninstall check gitops-check
+.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install observability-secret gitops-bootstrap tailscale-operator-secret pgadmin-secret cloudflared-install observability-install observability-uninstall check gitops-validator-test gitops-check
 
 help:
 	@echo "Common commands:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make observability-install Manual observability install when Argo CD is unavailable"
 	@echo "  make observability-uninstall Remove observability releases; keeps PVCs"
 	@echo "  make check                Run shell syntax checks"
+	@echo "  make gitops-validator-test Test collector validation failure modes"
 	@echo "  make gitops-check         Validate the GitOps-managed workloads"
 
 macos-info:
@@ -59,6 +60,9 @@ observability-uninstall:
 
 check:
 	bash -n scripts/*.sh scripts/macos/*.sh scripts/ubuntu/*.sh scripts/k3s/*.sh scripts/k8s/*.sh
+
+gitops-validator-test:
+	./scripts/k8s/43-test-job-info-collector-validator.sh
 
 gitops-check:
 	./scripts/k8s/41-validate-job-info-collector.sh

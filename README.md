@@ -112,13 +112,16 @@ is a separate guest operating system.
    ./scripts/macos/04-enable-utm-autostart.sh
    ```
 
-8. Install Argo CD, create the Grafana Secret, and bootstrap the GitOps root
-   Application inside Ubuntu. Push the GitOps files to `main` before the final
-   command because Argo CD reads the public GitHub repository:
+8. Install Argo CD, create the Grafana and collector database Secrets outside
+   Git, and bootstrap the GitOps root Application inside Ubuntu. Push the GitOps
+   files to `main` before the final command because Argo CD reads the public
+   GitHub repository. The database script prompts for its password without
+   placing it in shell history:
 
    ```bash
    ./scripts/k8s/30-install-argocd.sh
    GRAFANA_ADMIN_PASSWORD='choose-a-password' ./scripts/k8s/32-configure-observability-secret.sh
+   APP_NAME=job-info-collector ./scripts/k8s/38-configure-postgres-app-secret.sh
    ./scripts/k8s/33-bootstrap-gitops.sh
    ```
 
