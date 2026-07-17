@@ -6,21 +6,21 @@ metadata:
     app.kubernetes.io/managed-by: argocd
     app.kubernetes.io/name: job-info-collector
     app.kubernetes.io/part-of: job-info-collector
-    app.kubernetes.io/version: "0.3.0"
+    app.kubernetes.io/version: "0.4.0.dev0"
   annotations:
-    job-info-collector.kunxie.dev/source-revision: "d4dbd8e8e8e38970f886f6e6f9fa9ad868ea3355"
-    job-info-collector.kunxie.dev/image-digest: "sha256:eec697c60fe453f3c906b0e9b48d2fd8d2efe09b9ed4ec1cb22ca200b41d205c"
+    job-info-collector.kunxie.dev/source-revision: "0579ff266ba6d573d592bb01a413bbb2626ccecf"
+    job-info-collector.kunxie.dev/image-digest: "sha256:fb67146398ab91ae8330e5dc8518152b5038f6be40d846c3b0c16927879e98eb"
 data:
-  applicationVersion: "0.3.0"
-  sourceRevision: "d4dbd8e8e8e38970f886f6e6f9fa9ad868ea3355"
-  sourceCreatedAt: "2026-07-16T03:21:38Z"
+  applicationVersion: "0.4.0.dev0"
+  sourceRevision: "0579ff266ba6d573d592bb01a413bbb2626ccecf"
+  sourceCreatedAt: "2026-07-17T01:42:36Z"
   imageRepository: "ghcr.io/kunxie/job-info-collector"
-  imageDigest: "sha256:eec697c60fe453f3c906b0e9b48d2fd8d2efe09b9ed4ec1cb22ca200b41d205c"
-  imageReference: "ghcr.io/kunxie/job-info-collector@sha256:eec697c60fe453f3c906b0e9b48d2fd8d2efe09b9ed4ec1cb22ca200b41d205c"
+  imageDigest: "sha256:fb67146398ab91ae8330e5dc8518152b5038f6be40d846c3b0c16927879e98eb"
+  imageReference: "ghcr.io/kunxie/job-info-collector@sha256:fb67146398ab91ae8330e5dc8518152b5038f6be40d846c3b0c16927879e98eb"
   platform: "linux/arm64"
-  publicationRecordSha256: "fa6d4fd6c134e82ad9e95aef541cbdf456003993cb1f2118804d81ecd91eb543"
-  publicationRun: "https://github.com/kunxie/job-info-collector/actions/runs/29468932111"
-  ciRun: "https://github.com/kunxie/job-info-collector/actions/runs/29468791563"
+  publicationRecordSha256: "0740a97299843921d64e8581e47f28eb5e8df173f3bc6f8091fa904c20bdafc1"
+  publicationRun: "https://github.com/kunxie/job-info-collector/actions/runs/29548429058"
+  ciRun: "https://github.com/kunxie/job-info-collector/actions/runs/29548129914"
 ---
 apiVersion: batch/v1
 kind: Job
@@ -31,13 +31,13 @@ metadata:
     app.kubernetes.io/managed-by: argocd
     app.kubernetes.io/name: job-info-collector
     app.kubernetes.io/part-of: job-info-collector
-    app.kubernetes.io/version: "0.3.0"
+    app.kubernetes.io/version: "0.4.0.dev0"
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-    job-info-collector.kunxie.dev/source-revision: "d4dbd8e8e8e38970f886f6e6f9fa9ad868ea3355"
-    job-info-collector.kunxie.dev/image-digest: "sha256:eec697c60fe453f3c906b0e9b48d2fd8d2efe09b9ed4ec1cb22ca200b41d205c"
-    job-info-collector.kunxie.dev/publication-run: "https://github.com/kunxie/job-info-collector/actions/runs/29468932111"
+    job-info-collector.kunxie.dev/source-revision: "0579ff266ba6d573d592bb01a413bbb2626ccecf"
+    job-info-collector.kunxie.dev/image-digest: "sha256:fb67146398ab91ae8330e5dc8518152b5038f6be40d846c3b0c16927879e98eb"
+    job-info-collector.kunxie.dev/publication-run: "https://github.com/kunxie/job-info-collector/actions/runs/29548429058"
 spec:
   activeDeadlineSeconds: 300
   backoffLimit: 1
@@ -49,10 +49,10 @@ spec:
         app.kubernetes.io/component: release-verification
         app.kubernetes.io/name: job-info-collector
         app.kubernetes.io/part-of: job-info-collector
-        app.kubernetes.io/version: "0.3.0"
+        app.kubernetes.io/version: "0.4.0.dev0"
       annotations:
-        job-info-collector.kunxie.dev/source-revision: "d4dbd8e8e8e38970f886f6e6f9fa9ad868ea3355"
-        job-info-collector.kunxie.dev/image-digest: "sha256:eec697c60fe453f3c906b0e9b48d2fd8d2efe09b9ed4ec1cb22ca200b41d205c"
+        job-info-collector.kunxie.dev/source-revision: "0579ff266ba6d573d592bb01a413bbb2626ccecf"
+        job-info-collector.kunxie.dev/image-digest: "sha256:fb67146398ab91ae8330e5dc8518152b5038f6be40d846c3b0c16927879e98eb"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -65,7 +65,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: release-verification
-          image: ghcr.io/kunxie/job-info-collector@sha256:eec697c60fe453f3c906b0e9b48d2fd8d2efe09b9ed4ec1cb22ca200b41d205c
+          image: ghcr.io/kunxie/job-info-collector@sha256:fb67146398ab91ae8330e5dc8518152b5038f6be40d846c3b0c16927879e98eb
           imagePullPolicy: Always
           args:
             - --version
