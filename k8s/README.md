@@ -15,6 +15,8 @@ k8s/
     minio/
   apps/
     job-info-collector/
+      templates/
+        discovery-job.yaml
 ```
 
 Keep generated secrets out of Git. Prefer SOPS + age for encrypted secrets once
@@ -28,4 +30,6 @@ Argo CD handles subsequent changes from `main`.
 
 The `job-info-collector` foundation and its release procedure are documented in
 [`docs/08-job-info-collector.md`](../docs/08-job-info-collector.md). Run
-`make gitops-check` before proposing a collector release change.
+`make gitops-check` before proposing a collector release change. The discovery
+file under `templates/` is a fail-closed operator template and is deliberately
+not listed in its parent Kustomization; neither Argo CD nor CI invokes it.
