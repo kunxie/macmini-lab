@@ -80,6 +80,37 @@ metadata; it does not print or decode either credential.
 Do not use `kubectl get secret -o yaml`, decode these Secrets for inspection, or
 copy their values into Git, an issue, logs, or an Actions secret.
 
+## Milestone 5 dependency verification
+
+Milestone 5 upgrades the finite PostSync Job from an image-only check to
+`job-info-collector verify-services`. The command opens PostgreSQL, executes
+`SELECT 1`, and calls MinIO `HeadBucket`; it does not write a row, object,
+manifest, or test fixture. Successful output is exactly the safe dependency
+category summary emitted by the application and contains no endpoint,
+credential, bucket contents, or database data.
+
+The Job receives the same five database keys used by the migration Job plus
+the `endpoint`, `bucket`, `access-key`, and `secret-key` keys from the existing
+`job-info-collector-minio-credentials` Secret. It receives no source response,
+source authorization, alert, Kubernetes API, volume, or filesystem write
+access. A dedicated NetworkPolicy permits only cluster DNS, TCP/5432 to pods
+selected by `cnpg.io/cluster: postgres`, and TCP/9000 to pods selected by
+`v1.min.io/tenant: minio`.
+
+Create and scope the externally managed MinIO credential before approving the
+Milestone 5 promotion:
+
+```bash
+APP_NAME=job-info-collector \
+  ./scripts/k8s/36-configure-minio-app-secret.sh
+kubectl -n job-info-collector get secret \
+  job-info-collector-minio-credentials \
+  -o go-template='{{range $k,$v := .data}}{{printf "%s\n" $k}}{{end}}'
+```
+
+The second command prints key names only. The expected names are `access-key`,
+`bucket`, `endpoint`, and `secret-key`. Do not print or decode their values.
+
 ## Release identity
 
 Application release values live together in
@@ -167,9 +198,11 @@ kubectl -n job-info-collector get pod \
   -o jsonpath='{.items[0].spec.containers[0].image}{"\n"}'
 ```
 
-The PostSync log must match the application release ConfigMap. The migration
-Job annotations and image must match the migration-release ConfigMap, and its
-log must end with `database migrations applied`.
+The PostSync image identity must match the application release ConfigMap and
+its log must end with `service verification succeeded (postgresql and object
+store; no writes)`. The migration Job annotations and image must match the
+migration-release ConfigMap, and its log must end with `database migrations
+applied`.
 
 Argo CD retains the completed Job for inspection. The next release deletes it
 immediately before creating the new PostSync verification Job. A failed Job
@@ -245,8 +278,10 @@ creating parallel deployment paths:
 
 - Milestones 6 through 8 add finite discovery/operator Jobs, the detail-worker
   Deployment, and then the scheduler Deployment as their commands become real.
-- Milestone 9 adds the runtime ConfigMap, MinIO and PostgreSQL Secret references,
-  ServiceMonitor, PrometheusRule, resource tuning, and recovery verification.
+- Milestone 9 reuses the PostgreSQL and MinIO Secret references introduced by
+  finite Milestone 4/5 hooks for runtime workloads, and adds the runtime
+  ConfigMap, ServiceMonitor, PrometheusRule, resource tuning, and recovery
+  verification.
 
 Expand the AppProject resource allowlist only when a reviewed milestone adds a
 new namespaced resource kind. Secret values remain provisioned out of band and
