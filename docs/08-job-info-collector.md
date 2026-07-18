@@ -111,6 +111,87 @@ kubectl -n job-info-collector get secret \
 The second command prints key names only. The expected names are `access-key`,
 `bucket`, `endpoint`, and `secret-key`. Do not print or decode their values.
 
+## Milestone 6 opt-in discovery
+
+Milestone 6 adds a reviewed discovery Job and egress NetworkPolicy template at
+`k8s/apps/job-info-collector/templates/discovery-job.yaml`. The template is
+intentionally absent from `kustomization.yaml`: Argo CD cannot reconcile it,
+and merging this repository cannot make a public source request. It also
+contains unusable names, approval identity, release identity, timestamp,
+digest, and alert-threshold blockers. Validator `44` requires those blockers
+to remain in the committed template.
+
+Each invocation is a separate operator action. Before approving one, confirm
+that the accepted application release implements the Milestone 6 `discover`
+command, PostgreSQL and MinIO are healthy, the externally managed Secrets have
+the key sets documented above, and the intended Walmart Careers request is
+authorized. Copy the template outside the repository; never replace blockers
+in the committed source:
+
+```bash
+install -m 0600 \
+  k8s/apps/job-info-collector/templates/discovery-job.yaml \
+  /tmp/job-info-collector-discovery-approved.yaml
+```
+
+In that copy, replace every occurrence of each blocker as one reviewed unit:
+
+- use unique DNS-safe Job and NetworkPolicy names;
+- use the same immutable approval ID in both resources and all pod selectors;
+- copy the accepted version, complete source revision, and image digest from
+  `k8s/apps/job-info-collector/release.yaml`;
+- choose a whole-second scheduled timestamp on the current UTC date, no later
+  than creation time, from `00:00:00` inclusive through `05:00:00` exclusive;
+  and
+- set all four alert thresholds to reviewed positive values appropriate for
+  the expected population and queue state.
+
+The application stops at the next UTC midnight. The Job's 19-hour active
+deadline covers the remaining day even when creation occurs at the end of the
+allowed start window; it has one pod, no Kubernetes retry, and no recurring
+controller. Standard Kubernetes NetworkPolicy cannot select an HTTPS FQDN, so
+the public egress rule allows TCP/443 to any destination. It still denies every
+other public egress port and narrows DNS, PostgreSQL, and MinIO by namespace,
+pod selector, and port. Review that limitation as part of every approval.
+
+Before the live action, validate the exact approved copy and prove that no
+blocker remains:
+
+```bash
+kubeconform -kubernetes-version 1.36.0 -strict \
+  /tmp/job-info-collector-discovery-approved.yaml
+if rg -n 'REPLACE|replace-with|sha256:0{64}' \
+  /tmp/job-info-collector-discovery-approved.yaml; then
+  echo 'discovery manifest still contains a blocker' >&2
+  exit 1
+fi
+kubectl apply --dry-run=server \
+  -f /tmp/job-info-collector-discovery-approved.yaml
+```
+
+The server dry run does not authorize creation. Record the reviewed manifest
+checksum, release revision and digest, approval ID, UTC timestamp, expected
+targets, and approving operator. Only after that explicit approval, create the
+two resources in a separate command; this command begins the live traversal:
+
+```bash
+kubectl create -f /tmp/job-info-collector-discovery-approved.yaml
+```
+
+Inspect the exact labeled Job without printing either Secret. Retain the
+sanitized command output, terminal Job condition, application run UUID,
+manifest object key, database counts, object counts, approved-manifest
+checksum, and Git revision as acceptance evidence. A failed or partial run is
+durable evidence and must not be automatically repeated. After the Job reaches
+a terminal state and evidence is captured, delete only its uniquely named
+discovery NetworkPolicy; retain the Job until the acceptance record is
+complete. The namespace default-deny policy remains in force.
+
+Do not commit the populated copy, print Secret values, use a mutable image tag,
+attach an Argo CD hook annotation, add the template to Kustomize, or invoke it
+from CI. The application repository's discovery operations guide defines the
+request, persistence, exit-status, and failure-handling contracts.
+
 ## Release identity
 
 Application release values live together in

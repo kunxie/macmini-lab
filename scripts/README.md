@@ -30,6 +30,7 @@ and `38`, then bootstrap GitOps with `33`.
 | 41 | `scripts/k8s/41-validate-job-info-collector.sh` | Workstation or CI | Renders and validates collector release and migration contracts. |
 | 42 | `scripts/k8s/42-validate-headlamp.sh` | Workstation or CI | Renders and validates the pinned Headlamp chart. |
 | 43 | `scripts/k8s/43-test-job-info-collector-validator.sh` | Workstation or CI | Runs deterministic collector-validator regression and negative tests. |
+| 44 | `scripts/k8s/44-validate-discovery-template.sh` | Workstation or CI | Validates the finite, fail-closed, opt-in discovery Job template. |
 | 80 | `scripts/ubuntu/80-mount-data-disk.sh` | Ubuntu VM | Optional later, when adding an external SSD. |
 | 90 | `scripts/k8s/90-uninstall-observability.sh` | Ubuntu VM | Removes observability releases but keeps their PVCs. |
 | 99 | `scripts/k3s/99-uninstall-k3s.sh` | Ubuntu VM | Destructive recovery action; removes K3s after confirmation. |
