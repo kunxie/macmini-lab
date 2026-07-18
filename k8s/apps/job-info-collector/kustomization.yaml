@@ -6,6 +6,7 @@ resources:
   - migration-release.yaml
   - network-policy.yaml
   - release.yaml
+  - verification-network-policy.yaml
 replacements:
   - source:
       kind: ConfigMap
