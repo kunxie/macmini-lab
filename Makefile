@@ -67,3 +67,4 @@ gitops-validator-test:
 gitops-check:
 	./scripts/k8s/41-validate-job-info-collector.sh
 	./scripts/k8s/42-validate-headlamp.sh
+	./scripts/k8s/44-validate-discovery-template.sh
