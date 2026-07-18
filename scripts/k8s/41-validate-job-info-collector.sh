@@ -354,8 +354,10 @@ spec:
 
 validate_exact_verification_runtime() {
   local job_document="$1"
+  local policy_document="$2"
   local actual_pod_spec
   local expected_pod_spec
+  local expected_policy
 
   test "$(yaml_scalar_count "${job_document}" activeDeadlineSeconds 300)" -eq 1 || \
     fail "the rendered verification Job must retain its five-minute deadline"
@@ -377,17 +379,63 @@ validate_exact_verification_runtime() {
       automountServiceAccountToken: false
       containers:
       - args:
-        - --version
+        - verify-services
+        env:
+        - name: JIC_DATABASE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_HOST
+          valueFrom:
+            secretKeyRef:
+              key: host
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_PORT
+          valueFrom:
+            secretKeyRef:
+              key: port
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              key: dbname
+              name: job-info-collector-db-credentials
+        - name: JIC_S3_ENDPOINT_URL
+          valueFrom:
+            secretKeyRef:
+              key: endpoint
+              name: job-info-collector-minio-credentials
+        - name: JIC_S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              key: bucket
+              name: job-info-collector-minio-credentials
+        - name: JIC_S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: access-key
+              name: job-info-collector-minio-credentials
+        - name: JIC_S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: secret-key
+              name: job-info-collector-minio-credentials
         image: ${reference}
         imagePullPolicy: Always
         name: release-verification
         resources:
           limits:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 250m
+            memory: 256Mi
           requests:
             cpu: 10m
-            memory: 32Mi
+            memory: 64Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -406,7 +454,59 @@ validate_exact_verification_runtime() {
 EOF
 )"
   test "${actual_pod_spec}" = "${expected_pod_spec}" || \
-    fail "the rendered verification pod must not receive credentials, volumes, or extra runtime access"
+    fail "the rendered verification pod must expose only the approved dependency credentials and runtime surface"
+
+  expected_policy='apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/component: release-verification
+    app.kubernetes.io/name: job-info-collector
+    app.kubernetes.io/part-of: job-info-collector
+  name: job-info-collector-release-verification-egress
+  namespace: job-info-collector
+spec:
+  egress:
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+  - ports:
+    - port: 5432
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: data
+      podSelector:
+        matchLabels:
+          cnpg.io/cluster: postgres
+  - ports:
+    - port: 9000
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: data
+      podSelector:
+        matchLabels:
+          v1.min.io/tenant: minio
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: release-verification
+      app.kubernetes.io/name: job-info-collector
+  policyTypes:
+  - Egress'
+  test "${policy_document}" = "${expected_policy}" || \
+    fail "the rendered verification NetworkPolicy must allow only cluster DNS, PostgreSQL, and MinIO egress"
 }
 
 validate_identity() {
@@ -653,7 +753,8 @@ ConfigMap/job-info-collector-release
 Job/job-info-collector-database-migration
 Job/job-info-collector-release-verification
 NetworkPolicy/job-info-collector-database-migration-egress
-NetworkPolicy/job-info-collector-default-deny'
+NetworkPolicy/job-info-collector-default-deny
+NetworkPolicy/job-info-collector-release-verification-egress'
 test "${inventory}" = "${expected_inventory}" || \
   fail "the rendered collector resource inventory contains an unexpected or missing object"
 
@@ -728,12 +829,14 @@ migration_policy="$(rendered_object "${rendered}" NetworkPolicy \
   job-info-collector-database-migration-egress)"
 default_deny_policy="$(rendered_object "${rendered}" NetworkPolicy \
   job-info-collector-default-deny)"
+verification_policy="$(rendered_object "${rendered}" NetworkPolicy \
+  job-info-collector-release-verification-egress)"
 validate_rendered_job_binding migration "${migration_job}" \
   "${migration_reference}" "${migration_version}" "${migration_revision}" \
   "${migration_digest}" PreSync migrate
 validate_rendered_job_binding verification "${verification_job}" \
-  "${reference}" "${version}" "${revision}" "${digest}" PostSync --version
-validate_exact_verification_runtime "${verification_job}"
+  "${reference}" "${version}" "${revision}" "${digest}" PostSync verify-services
+validate_exact_verification_runtime "${verification_job}" "${verification_policy}"
 test "$(yaml_scalar_count "${migration_job}" job-info-collector.kunxie.dev/alembic-head "${alembic_head}")" -eq 2 || \
   fail "the rendered migration Job Alembic head does not match its release identity"
 test "$(yaml_scalar_count "${migration_job}" job-info-collector.kunxie.dev/migration-generation "${migration_generation}")" -eq 2 || \
@@ -761,6 +864,16 @@ grep -Fq 'readOnlyRootFilesystem: true' "${RELEASE_FILE}" || \
   fail "the verification container must use a read-only root filesystem"
 grep -Fq 'allowPrivilegeEscalation: false' "${RELEASE_FILE}" || \
   fail "the verification container must disallow privilege escalation"
+grep -Fq 'verify-services' "${RELEASE_FILE}" || \
+  fail "the verification Job must run the finite dependency probe"
+test "$(grep -Fc 'name: job-info-collector-db-credentials' "${RELEASE_FILE}")" -eq 5 || \
+  fail "the verification Job must use five keys from the existing database Secret"
+test "$(grep -Fc 'name: job-info-collector-minio-credentials' "${RELEASE_FILE}")" -eq 4 || \
+  fail "the verification Job must use four keys from the existing MinIO Secret"
+grep -Fq 'v1.min.io/tenant: minio' "${APP_DIR}/verification-network-policy.yaml" || \
+  fail "verification MinIO egress must target only the approved tenant"
+grep -Fq 'cnpg.io/cluster: postgres' "${APP_DIR}/verification-network-policy.yaml" || \
+  fail "verification database egress must target only the approved cluster"
 
 grep -Fq 'argocd.argoproj.io/hook: PreSync' "${MIGRATION_FILE}" || \
   fail "the database migration must run as a PreSync hook"

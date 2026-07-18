@@ -68,14 +68,60 @@ spec:
           image: ghcr.io/kunxie/job-info-collector@sha256:a8b75a115371bced5b0aa684d195800123e31a787c630a53a00af29aa60e3b23
           imagePullPolicy: Always
           args:
-            - --version
+            - verify-services
+          env:
+            - name: JIC_DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-db-credentials
+                  key: username
+            - name: JIC_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-db-credentials
+                  key: password
+            - name: JIC_DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-db-credentials
+                  key: host
+            - name: JIC_DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-db-credentials
+                  key: port
+            - name: JIC_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-db-credentials
+                  key: dbname
+            - name: JIC_S3_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-minio-credentials
+                  key: endpoint
+            - name: JIC_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-minio-credentials
+                  key: bucket
+            - name: JIC_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-minio-credentials
+                  key: access-key
+            - name: JIC_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: job-info-collector-minio-credentials
+                  key: secret-key
           resources:
             requests:
               cpu: 10m
-              memory: 32Mi
+              memory: 64Mi
             limits:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 250m
+              memory: 256Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

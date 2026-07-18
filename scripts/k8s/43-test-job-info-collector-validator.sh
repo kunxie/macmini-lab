@@ -139,6 +139,9 @@ fi
     $1 == "name:" && $2 == "job-info-collector-default-deny" {
       object = "default-deny-policy"
     }
+    $1 == "name:" && $2 == "job-info-collector-release-verification-egress" {
+      object = "verification-policy"
+    }
     $1 == "name:" && $2 == "job-info-collector-database-migration" {
       job = "migration"
     }
@@ -163,8 +166,8 @@ fi
       next
     }
     mode == "wrong-verification-command" && job == "verification" &&
-      $1 == "-" && $2 == "--version" {
-      sub(/--version$/, "migrate")
+      $1 == "-" && $2 == "verify-services" {
+      sub(/verify-services$/, "migrate")
     }
     mode == "unbounded-migration-job" && job == "migration" &&
       $1 == "activeDeadlineSeconds:" {
@@ -172,6 +175,14 @@ fi
     }
     mode == "allow-all-migration-egress" &&
       object == "migration-policy" && $1 == "egress:" {
+      print
+      print "  - to:"
+      print "    - ipBlock:"
+      print "        cidr: 0.0.0.0/0"
+      next
+    }
+    mode == "allow-all-verification-egress" &&
+      object == "verification-policy" && $1 == "egress:" {
       print
       print "  - to:"
       print "    - ipBlock:"
@@ -491,15 +502,19 @@ expect_failure "rendered migration Job must not override the image entrypoint"
 unset RENDER_MUTATION_OVERRIDE
 
 RENDER_MUTATION_OVERRIDE=wrong-verification-command
-expect_failure "rendered verification Job must run only --version"
+expect_failure "rendered verification Job must run only verify-services"
 unset RENDER_MUTATION_OVERRIDE
 
 RENDER_MUTATION_OVERRIDE=extra-verification-secret
-expect_failure "rendered verification pod must not receive credentials, volumes, or extra runtime access"
+expect_failure "rendered verification pod must expose only the approved dependency credentials and runtime surface"
 unset RENDER_MUTATION_OVERRIDE
 
 RENDER_MUTATION_OVERRIDE=allow-all-migration-egress
 expect_failure "rendered migration NetworkPolicy must allow only cluster DNS and PostgreSQL egress"
+unset RENDER_MUTATION_OVERRIDE
+
+RENDER_MUTATION_OVERRIDE=allow-all-verification-egress
+expect_failure "rendered verification NetworkPolicy must allow only cluster DNS, PostgreSQL, and MinIO egress"
 unset RENDER_MUTATION_OVERRIDE
 
 RENDER_MUTATION_OVERRIDE=additional-egress-policy
