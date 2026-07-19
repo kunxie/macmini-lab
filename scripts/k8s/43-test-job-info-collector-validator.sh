@@ -142,6 +142,12 @@ fi
     $1 == "name:" && $2 == "job-info-collector-release-verification-egress" {
       object = "verification-policy"
     }
+    $1 == "name:" && $2 == "job-info-collector-detail-worker" {
+      object = "detail-worker-deployment"
+    }
+    $1 == "name:" && $2 == "job-info-collector-detail-worker-egress" {
+      object = "detail-worker-policy"
+    }
     $1 == "name:" && $2 == "job-info-collector-database-migration" {
       job = "migration"
     }
@@ -168,6 +174,18 @@ fi
     mode == "wrong-verification-command" && job == "verification" &&
       $1 == "-" && $2 == "verify-services" {
       sub(/verify-services$/, "migrate")
+    }
+    mode == "worker-replicas" && object == "detail-worker-deployment" &&
+      $1 == "replicas:" {
+      sub(/1$/, "2")
+    }
+    mode == "wrong-worker-command" && object == "detail-worker-deployment" &&
+      $1 == "-" && $2 == "detail-worker" {
+      sub(/detail-worker$/, "discover")
+    }
+    mode == "broaden-worker-egress" && object == "detail-worker-policy" &&
+      $1 == "cidr:" && $2 == "0.0.0.0/0" {
+      sub(/0.0.0.0\/0$/, "0.0.0.0/1")
     }
     mode == "unbounded-migration-job" && job == "migration" &&
       $1 == "activeDeadlineSeconds:" {
@@ -505,6 +523,18 @@ RENDER_MUTATION_OVERRIDE=wrong-verification-command
 expect_failure "rendered verification Job must run only verify-services"
 unset RENDER_MUTATION_OVERRIDE
 
+RENDER_MUTATION_OVERRIDE=worker-replicas
+expect_failure "the detail-worker Deployment must have exactly one replica"
+unset RENDER_MUTATION_OVERRIDE
+
+RENDER_MUTATION_OVERRIDE=wrong-worker-command
+expect_failure "the detail-worker Deployment must run only detail-worker"
+unset RENDER_MUTATION_OVERRIDE
+
+RENDER_MUTATION_OVERRIDE=broaden-worker-egress
+expect_failure "the detail-worker NetworkPolicy must allow only DNS, PostgreSQL, MinIO, and public HTTPS egress"
+unset RENDER_MUTATION_OVERRIDE
+
 RENDER_MUTATION_OVERRIDE=extra-verification-secret
 expect_failure "rendered verification pod must expose only the approved dependency credentials and runtime surface"
 unset RENDER_MUTATION_OVERRIDE
@@ -538,7 +568,7 @@ unset RENDER_MUTATION_OVERRIDE
 for mutation in extra-migration-container migration-init-container \
   extra-verification-container; do
   RENDER_MUTATION_OVERRIDE="${mutation}"
-  expect_failure "expected migration and verification images"
+  expect_failure "expected migration, verification, and detail-worker images"
 done
 unset RENDER_MUTATION_OVERRIDE
 

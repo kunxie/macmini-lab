@@ -509,6 +509,252 @@ spec:
     fail "the rendered verification NetworkPolicy must allow only cluster DNS, PostgreSQL, and MinIO egress"
 }
 
+validate_exact_detail_worker_runtime() {
+  local deployment_document="$1"
+  local policy_document="$2"
+  local expected_reference="$3"
+  local expected_version="$4"
+  local expected_revision="$5"
+  local expected_digest="$6"
+  local actual_pod_spec
+  local expected_pod_spec
+  local expected_policy
+  local -a worker_images=()
+
+  test -n "${deployment_document}" || fail "the rendered detail-worker Deployment is missing"
+  mapfile -t worker_images < <(
+    awk '$1 == "image:" {image = $2; gsub(/^"|"$/, "", image); print image}' \
+      <<< "${deployment_document}"
+  )
+  test "${#worker_images[@]}" -eq 1 || \
+    fail "the detail-worker Deployment must contain exactly one image"
+  test "${worker_images[0]}" = "${expected_reference}" || \
+    fail "the detail-worker image does not match the application release"
+  test "$(yaml_scalar_count "${deployment_document}" app.kubernetes.io/version "${expected_version}")" -eq 2 || \
+    fail "the detail-worker version does not match the application release"
+  test "$(yaml_scalar_count "${deployment_document}" job-info-collector.kunxie.dev/source-revision "${expected_revision}")" -eq 2 || \
+    fail "the detail-worker source revision does not match the application release"
+  test "$(yaml_scalar_count "${deployment_document}" job-info-collector.kunxie.dev/image-digest "${expected_digest}")" -eq 2 || \
+    fail "the detail-worker digest does not match the application release"
+  test "$(yaml_scalar_count "${deployment_document}" replicas 1)" -eq 1 || \
+    fail "the detail-worker Deployment must have exactly one replica"
+  test "$(yaml_scalar_count "${deployment_document}" revisionHistoryLimit 2)" -eq 1 || \
+    fail "the detail-worker Deployment must retain two revisions"
+  test "$(yaml_scalar_count "${deployment_document}" type Recreate)" -eq 1 || \
+    fail "the detail-worker Deployment must use the Recreate strategy"
+  test "$(yaml_scalar_count "${deployment_document}" argocd.argoproj.io/sync-wave 1)" -eq 1 || \
+    fail "the detail-worker Deployment must run in sync wave one"
+  test "$(awk '$1 == "command:" || ($1 == "-" && $2 == "command:") {count++} END {print count + 0}' <<< "${deployment_document}")" -eq 3 || \
+    fail "the detail-worker must define only its three process probes"
+  test "$(rendered_job_argument "${deployment_document}")" = detail-worker || \
+    fail "the detail-worker Deployment must run only detail-worker"
+
+  actual_pod_spec="$(awk '
+    /^    spec:$/ { in_pod_spec = 1 }
+    in_pod_spec { print }
+  ' <<< "${deployment_document}")"
+  expected_pod_spec="$(cat <<EOF
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - args:
+        - detail-worker
+        env:
+        - name: JIC_ENVIRONMENT
+          value: production
+        - name: JIC_LOG_FORMAT
+          value: json
+        - name: JIC_LOG_LEVEL
+          value: INFO
+        - name: JIC_SOURCE_BASE_URL
+          value: https://careers.walmart.com
+        - name: JIC_SOURCE_GRAPHQL_ENDPOINT
+          value: /api/graphql
+        - name: JIC_REQUEST_TIMEOUT_SECONDS
+          value: "30"
+        - name: JIC_REQUEST_DELAY_MIN_SECONDS
+          value: "1"
+        - name: JIC_REQUEST_DELAY_MAX_SECONDS
+          value: "2"
+        - name: JIC_WORKER_POLL_INTERVAL_SECONDS
+          value: "5"
+        - name: JIC_CLAIM_LEASE_SECONDS
+          value: "60"
+        - name: JIC_DETAIL_BACKOFF_MIN_SECONDS
+          value: "1"
+        - name: JIC_DETAIL_BACKOFF_MAX_SECONDS
+          value: "10"
+        - name: JIC_DATABASE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_HOST
+          valueFrom:
+            secretKeyRef:
+              key: host
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_PORT
+          valueFrom:
+            secretKeyRef:
+              key: port
+              name: job-info-collector-db-credentials
+        - name: JIC_DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              key: dbname
+              name: job-info-collector-db-credentials
+        - name: JIC_S3_ENDPOINT_URL
+          valueFrom:
+            secretKeyRef:
+              key: endpoint
+              name: job-info-collector-minio-credentials
+        - name: JIC_S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              key: bucket
+              name: job-info-collector-minio-credentials
+        - name: JIC_S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: access-key
+              name: job-info-collector-minio-credentials
+        - name: JIC_S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: secret-key
+              name: job-info-collector-minio-credentials
+        image: ${expected_reference}
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - import os; os.kill(1, 0)
+          failureThreshold: 3
+          periodSeconds: 30
+          timeoutSeconds: 1
+        name: detail-worker
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - import os; os.kill(1, 0)
+          failureThreshold: 3
+          periodSeconds: 10
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 25m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        startupProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - import os; os.kill(1, 0)
+          failureThreshold: 30
+          periodSeconds: 2
+          timeoutSeconds: 1
+      enableServiceLinks: false
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 90
+EOF
+)"
+  test "${actual_pod_spec}" = "${expected_pod_spec}" || \
+    fail "the detail-worker pod must retain the approved runtime, credential, probe, and shutdown surface"
+
+  expected_policy='apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/component: detail-worker
+    app.kubernetes.io/name: job-info-collector
+    app.kubernetes.io/part-of: job-info-collector
+  name: job-info-collector-detail-worker-egress
+  namespace: job-info-collector
+spec:
+  egress:
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+  - ports:
+    - port: 5432
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: data
+      podSelector:
+        matchLabels:
+          cnpg.io/cluster: postgres
+  - ports:
+    - port: 9000
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: data
+      podSelector:
+        matchLabels:
+          v1.min.io/tenant: minio
+  - ports:
+    - port: 443
+      protocol: TCP
+    to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 100.64.0.0/10
+        - 127.0.0.0/8
+        - 169.254.0.0/16
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        - 198.18.0.0/15
+        - 224.0.0.0/4
+        - 240.0.0.0/4
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: detail-worker
+      app.kubernetes.io/name: job-info-collector
+  policyTypes:
+  - Egress'
+  test "${policy_document}" = "${expected_policy}" || \
+    fail "the detail-worker NetworkPolicy must allow only DNS, PostgreSQL, MinIO, and public HTTPS egress"
+}
+
 validate_identity() {
   local label="$1"
   local version="$2"
@@ -750,10 +996,12 @@ test -s "${rendered}" || fail "Kustomize rendered no resources"
 inventory="$(rendered_inventory "${rendered}" | sort)"
 expected_inventory='ConfigMap/job-info-collector-migration-release
 ConfigMap/job-info-collector-release
+Deployment/job-info-collector-detail-worker
 Job/job-info-collector-database-migration
 Job/job-info-collector-release-verification
 NetworkPolicy/job-info-collector-database-migration-egress
 NetworkPolicy/job-info-collector-default-deny
+NetworkPolicy/job-info-collector-detail-worker-egress
 NetworkPolicy/job-info-collector-release-verification-egress'
 test "${inventory}" = "${expected_inventory}" || \
   fail "the rendered collector resource inventory contains an unexpected or missing object"
@@ -779,7 +1027,8 @@ mapfile -t images < <(
     }
   ' "${rendered}"
 )
-test "${#images[@]}" -eq 2 || fail "expected migration and verification images"
+test "${#images[@]}" -eq 3 || \
+  fail "expected migration, verification, and detail-worker images"
 
 version="$(scalar "${RELEASE_FILE}" applicationVersion)"
 revision="$(scalar "${RELEASE_FILE}" sourceRevision)"
@@ -825,18 +1074,24 @@ migration_job="$(rendered_object "${rendered}" Job \
   job-info-collector-database-migration)"
 verification_job="$(rendered_object "${rendered}" Job \
   job-info-collector-release-verification)"
+detail_worker_deployment="$(rendered_object "${rendered}" Deployment \
+  job-info-collector-detail-worker)"
 migration_policy="$(rendered_object "${rendered}" NetworkPolicy \
   job-info-collector-database-migration-egress)"
 default_deny_policy="$(rendered_object "${rendered}" NetworkPolicy \
   job-info-collector-default-deny)"
 verification_policy="$(rendered_object "${rendered}" NetworkPolicy \
   job-info-collector-release-verification-egress)"
+detail_worker_policy="$(rendered_object "${rendered}" NetworkPolicy \
+  job-info-collector-detail-worker-egress)"
 validate_rendered_job_binding migration "${migration_job}" \
   "${migration_reference}" "${migration_version}" "${migration_revision}" \
   "${migration_digest}" PreSync migrate
 validate_rendered_job_binding verification "${verification_job}" \
   "${reference}" "${version}" "${revision}" "${digest}" PostSync verify-services
 validate_exact_verification_runtime "${verification_job}" "${verification_policy}"
+validate_exact_detail_worker_runtime "${detail_worker_deployment}" \
+  "${detail_worker_policy}" "${reference}" "${version}" "${revision}" "${digest}"
 test "$(yaml_scalar_count "${migration_job}" job-info-collector.kunxie.dev/alembic-head "${alembic_head}")" -eq 2 || \
   fail "the rendered migration Job Alembic head does not match its release identity"
 test "$(yaml_scalar_count "${migration_job}" job-info-collector.kunxie.dev/migration-generation "${migration_generation}")" -eq 2 || \
@@ -932,6 +1187,9 @@ if grep -Fq 'ApplyOutOfSyncOnly=true' "${APPLICATION_FILE}"; then
 fi
 grep -Fq 'namespace: job-info-collector' "${PROJECT_FILE}" || \
   fail "the AppProject must be restricted to the collector namespace"
+grep -Fq 'group: apps' "${PROJECT_FILE}" && \
+  grep -Fq 'kind: Deployment' "${PROJECT_FILE}" || \
+  fail "the AppProject must allow the detail-worker Deployment kind"
 
 if test "${CHECK_IMAGE_PLATFORM:-false}" = true; then
   command -v docker >/dev/null 2>&1 || fail "docker is required for platform verification"

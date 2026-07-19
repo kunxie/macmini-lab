@@ -2,12 +2,56 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: job-info-collector
 resources:
+  - detail-worker.yaml
   - migration.yaml
   - migration-release.yaml
   - network-policy.yaml
   - release.yaml
   - verification-network-policy.yaml
 replacements:
+  - source:
+      kind: ConfigMap
+      name: job-info-collector-release
+      fieldPath: data.imageReference
+    targets:
+      - select:
+          kind: Deployment
+          name: job-info-collector-detail-worker
+        fieldPaths:
+          - spec.template.spec.containers.[name=detail-worker].image
+  - source:
+      kind: ConfigMap
+      name: job-info-collector-release
+      fieldPath: data.applicationVersion
+    targets:
+      - select:
+          kind: Deployment
+          name: job-info-collector-detail-worker
+        fieldPaths:
+          - metadata.labels.[app.kubernetes.io/version]
+          - spec.template.metadata.labels.[app.kubernetes.io/version]
+  - source:
+      kind: ConfigMap
+      name: job-info-collector-release
+      fieldPath: data.sourceRevision
+    targets:
+      - select:
+          kind: Deployment
+          name: job-info-collector-detail-worker
+        fieldPaths:
+          - metadata.annotations.[job-info-collector.kunxie.dev/source-revision]
+          - spec.template.metadata.annotations.[job-info-collector.kunxie.dev/source-revision]
+  - source:
+      kind: ConfigMap
+      name: job-info-collector-release
+      fieldPath: data.imageDigest
+    targets:
+      - select:
+          kind: Deployment
+          name: job-info-collector-detail-worker
+        fieldPaths:
+          - metadata.annotations.[job-info-collector.kunxie.dev/image-digest]
+          - spec.template.metadata.annotations.[job-info-collector.kunxie.dev/image-digest]
   - source:
       kind: ConfigMap
       name: job-info-collector-migration-release
