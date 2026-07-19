@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "name": "job-info-collector",
+  "project": "personal-apps",
+  "source": {
+    "repository": "kunxie/job-info-collector",
+    "repoURL": "https://github.com/kunxie/job-info-collector.git",
+    "path": "deploy/overlays/macmini-lab",
+    "revision": "249db684cf2a767f0bb8976ce602515d39101332"
+  },
+  "destination": {
+    "server": "https://kubernetes.default.svc",
+    "namespace": "job-info-collector"
+  },
+  "release": {
+    "version": "0.7.0",
+    "releaseKind": "stable",
+    "sourceRevision": "b1f954d1b9c7535bb651c94d43dacf3053d786b4",
+    "sourceCreatedAt": "2026-07-19T03:43:38Z",
+    "imageRepository": "ghcr.io/kunxie/job-info-collector",
+    "imageDigest": "sha256:65e18ac9aa395906748d1b7d1bf13eb2015d9ee6f0ad721a7ae6529b8a4c902c",
+    "image": "ghcr.io/kunxie/job-info-collector@sha256:65e18ac9aa395906748d1b7d1bf13eb2015d9ee6f0ad721a7ae6529b8a4c902c",
+    "platform": "linux/arm64",
+    "publicationRecordSha256": "c62b3784e7aa28cb86dcc2644ba974934dc2ee5252f8a931982f3e94504ea7af",
+    "publicationRun": "https://github.com/kunxie/job-info-collector/actions/runs/29672461208",
+    "ciRun": "https://github.com/kunxie/job-info-collector/actions/runs/29672201378"
+  },
+  "migration": {
+    "version": "0.4.0.dev0",
+    "releaseKind": "development",
+    "sourceRevision": "40045f7325889a0a8450c086dab90531556253fc",
+    "sourceCreatedAt": "2026-07-17T02:40:44Z",
+    "imageRepository": "ghcr.io/kunxie/job-info-collector",
+    "imageDigest": "sha256:91de32cdb54d9fe1a81255b19f15b84b72180d12d8156b246dc5de0b14092447",
+    "image": "ghcr.io/kunxie/job-info-collector@sha256:91de32cdb54d9fe1a81255b19f15b84b72180d12d8156b246dc5de0b14092447",
+    "platform": "linux/arm64",
+    "publicationRecordSha256": "c28e5e1cab72e306df9b0d54329ddd9bb4f960cecc5bfc472fc2a69df4d739a4",
+    "publicationRun": "https://github.com/kunxie/job-info-collector/actions/runs/29550813421",
+    "ciRun": "https://github.com/kunxie/job-info-collector/actions/runs/29550517789",
+    "kind": "alembic",
+    "head": "0001_initial_schema",
+    "generation": 1
+  }
+}

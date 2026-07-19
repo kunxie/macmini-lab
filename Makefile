@@ -1,4 +1,4 @@
-.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install observability-secret gitops-bootstrap tailscale-operator-secret pgadmin-secret cloudflared-install observability-install observability-uninstall check gitops-validator-test gitops-check
+.PHONY: help macos-info ubuntu-iso ubuntu-bootstrap tailscale-install k3s-install argocd-install argocd-repo-credential observability-secret gitops-bootstrap tailscale-operator-secret pgadmin-secret cloudflared-install observability-install observability-uninstall check registry-test gitops-validator-test gitops-check
 
 help:
 	@echo "Common commands:"
@@ -8,6 +8,7 @@ help:
 	@echo "  make tailscale-install    Install Tailscale in Ubuntu and enable Tailscale SSH"
 	@echo "  make k3s-install          Install single-node K3s inside Ubuntu VM"
 	@echo "  make argocd-install       Install Argo CD into K3s"
+	@echo "  make argocd-repo-credential Configure private GitHub repository access"
 	@echo "  make observability-secret Create Grafana credentials; requires GRAFANA_ADMIN_PASSWORD"
 	@echo "  make gitops-bootstrap     Register the root Argo CD Application"
 	@echo "  make tailscale-operator-secret Create the Tailscale Operator OAuth Secret"
@@ -16,8 +17,8 @@ help:
 	@echo "  make observability-install Manual observability install when Argo CD is unavailable"
 	@echo "  make observability-uninstall Remove observability releases; keeps PVCs"
 	@echo "  make check                Run shell syntax checks"
-	@echo "  make gitops-validator-test Test collector validation failure modes"
-	@echo "  make gitops-check         Validate the GitOps-managed workloads"
+	@echo "  make registry-test        Test generic application registry failure modes"
+	@echo "  make gitops-check         Validate platform and registered applications"
 
 macos-info:
 	./scripts/macos/01-install-host-tools.sh
@@ -36,6 +37,9 @@ k3s-install:
 
 argocd-install:
 	./scripts/k8s/30-install-argocd.sh
+
+argocd-repo-credential:
+	./scripts/k8s/45-configure-argocd-github-app.sh
 
 observability-secret:
 	./scripts/k8s/32-configure-observability-secret.sh
@@ -61,10 +65,13 @@ observability-uninstall:
 check:
 	bash -n scripts/*.sh scripts/macos/*.sh scripts/ubuntu/*.sh scripts/k3s/*.sh scripts/k8s/*.sh
 
-gitops-validator-test:
-	./scripts/k8s/43-test-job-info-collector-validator.sh
+registry-test:
+	python3 scripts/k8s/test_application_registry.py
+
+gitops-validator-test: registry-test
 
 gitops-check:
-	./scripts/k8s/41-validate-job-info-collector.sh
+	python3 scripts/k8s/validate_application_registry.py \
+		--base-ref "$${BASE_REF:-}"
+	python3 scripts/k8s/verify_registered_images.py
 	./scripts/k8s/42-validate-headlamp.sh
-	./scripts/k8s/44-validate-discovery-template.sh

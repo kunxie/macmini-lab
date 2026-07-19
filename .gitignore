@@ -11,3 +11,5 @@
 # Tool caches
 .terraform/
 .direnv/
+__pycache__/
+*.py[cod]

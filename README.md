@@ -113,15 +113,18 @@ is a separate guest operating system.
    ```
 
 8. Install Argo CD, create the Grafana and collector database Secrets outside
-   Git, and bootstrap the GitOps root Application inside Ubuntu. Push the GitOps
-   files to `main` before the final command because Argo CD reads the public
-   GitHub repository. The database script prompts for its password without
-   placing it in shell history:
+   Git, configure read-only access to private application repositories, and
+   bootstrap the GitOps root Application inside Ubuntu. Push the platform files
+   to `main` before the final command. The database script prompts for its
+   password without placing it in shell history:
 
    ```bash
    ./scripts/k8s/30-install-argocd.sh
    GRAFANA_ADMIN_PASSWORD='choose-a-password' ./scripts/k8s/32-configure-observability-secret.sh
    APP_NAME=job-info-collector ./scripts/k8s/38-configure-postgres-app-secret.sh
+   GITHUB_APP_ID=123 GITHUB_APP_INSTALLATION_ID=456 \
+     GITHUB_APP_PRIVATE_KEY_FILE=/secure/path/argocd-reader.pem \
+     make argocd-repo-credential
    ./scripts/k8s/33-bootstrap-gitops.sh
    ```
 
@@ -132,7 +135,8 @@ is a separate guest operating system.
    sudo DATA_DEVICE=/dev/disk/by-id/YOUR_DISK DATA_MOUNT=/mnt/data ./scripts/ubuntu/80-mount-data-disk.sh
    ```
 
-10. Add infra charts and app manifests under `k8s/`.
+10. Add shared infrastructure under `k8s/infra`; register application-owned
+    deployment packages under `k8s/registry`.
 11. Later, after you have a domain/public URL, add Cloudflare Tunnel:
 
    ```bash
@@ -147,7 +151,7 @@ scripts/macos/        Scripts run on the macOS host
 scripts/ubuntu/       Scripts run inside the Ubuntu VM; includes admin tools
 scripts/k3s/          K3s lifecycle scripts
 scripts/k8s/          Kubernetes add-on installation scripts
-k8s/                  Cluster manifests, Helm values, and app definitions
+k8s/                  Platform manifests, Helm values, and app registrations
 ```
 
 See [scripts/README.md](scripts/README.md) for the globally numbered execution

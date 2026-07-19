@@ -18,7 +18,7 @@ concurrency:
 env:
   KUBECONFORM_VERSION: v0.8.0
   KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
-  # Validation dependency only; collector promotions do not change this revision.
+  # Validation dependency only; application promotions do not change this revision.
   KUBERNETES_SCHEMA_REVISION: 5a65d88146aaabf1648f5a21fca28b6abf196f83
   KUBECTL_VERSION: v1.36.2
   KUBECTL_SHA256: 1e9045ec32bea85da43de85f0065358529ea7c7a152eca78154fba5b58c27d82
@@ -26,7 +26,7 @@ env:
   HELM_SHA256: 759c656fbd9c11e6a47784ecbeac6ad1eb16a9e76d202e51163ab78504848862
 
 jobs:
-  collector-manifests:
+  registered-applications:
     # Preserve this check name because branch protection may require it.
     name: collector manifests
     runs-on: ubuntu-24.04
@@ -75,10 +75,10 @@ jobs:
       - name: Check repository scripts
         run: make check
 
-      - name: Test collector validator failure modes
-        run: make gitops-validator-test
+      - name: Test the application registry contract
+        run: make registry-test
 
-      - name: Render and validate the GitOps workloads
+      - name: Validate the platform and registered applications
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
           CHECK_IMAGE_PLATFORM: "true"
