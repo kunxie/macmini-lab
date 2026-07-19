@@ -18,7 +18,10 @@ from update_application_release import (
     update_registration,
     validate_candidate,
 )
-from validate_application_registry import validate_history
+from validate_application_registry import (
+    _validate_migration_sync_trigger,
+    validate_history,
+)
 from verify_registered_images import _verify_migration
 
 REGISTRATION_PATH = Path("k8s/registry/job-info-collector/production.json")
@@ -233,6 +236,37 @@ class RegistryUpdaterTests(unittest.TestCase):
                 ]
             ),
         )
+
+
+class MigrationSyncTriggerTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.application_set = Path(
+            "k8s/argocd/applications/personal-applications.yaml"
+        ).read_text(encoding="utf-8")
+
+    def test_trigger_targets_only_persistent_network_policy_metadata(self) -> None:
+        _validate_migration_sync_trigger(self.application_set)
+
+    def test_common_annotations_are_rejected_to_avoid_runtime_restart(self) -> None:
+        unsafe = self.application_set.replace(
+            "          patches:\n",
+            "          commonAnnotations:\n"
+            '            platform.kunxie.dev/migration-generation: "2"\n'
+            "          patches:\n",
+            1,
+        )
+
+        with self.assertRaisesRegex(RegistryError, "must not annotate workload"):
+            _validate_migration_sync_trigger(unsafe)
+
+    def test_missing_default_deny_target_is_rejected(self) -> None:
+        missing_target = self.application_set.replace(
+            'name: "{{ .name }}-default-deny"',
+            'name: "{{ .name }}-missing-trigger"',
+        )
+
+        with self.assertRaisesRegex(RegistryError, "persistent default-deny"):
+            _validate_migration_sync_trigger(missing_target)
 
 
 if __name__ == "__main__":
