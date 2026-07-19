@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: personal-applications
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - git:
+        repoURL: https://github.com/kunxie/macmini-lab.git
+        revision: main
+        files:
+          - path: k8s/registry/*/production.json
+  template:
+    metadata:
+      name: "{{ .name }}"
+      namespace: argocd
+      annotations:
+        platform.kunxie.dev/deployment-revision: "{{ .source.revision }}"
+        platform.kunxie.dev/source-revision: "{{ .release.sourceRevision }}"
+        platform.kunxie.dev/image-digest: "{{ .release.imageDigest }}"
+        platform.kunxie.dev/publication-run: "{{ .release.publicationRun }}"
+        platform.kunxie.dev/migration-revision: "{{ .migration.sourceRevision }}"
+        platform.kunxie.dev/migration-digest: "{{ .migration.imageDigest }}"
+        platform.kunxie.dev/migration-head: "{{ .migration.head }}"
+        platform.kunxie.dev/migration-generation: "{{ .migration.generation }}"
+    spec:
+      project: personal-apps
+      source:
+        repoURL: "{{ .source.repoURL }}"
+        targetRevision: "{{ .source.revision }}"
+        path: "{{ .source.path }}"
+        kustomize:
+          images:
+            - "platform-runtime-image={{ .release.image }}"
+            - "platform-migration-image={{ .migration.image }}"
+      destination:
+        server: "{{ .destination.server }}"
+        namespace: "{{ .destination.namespace }}"
+      revisionHistoryLimit: 10
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
+  syncPolicy:
+    preserveResourcesOnDeletion: true

@@ -9,8 +9,8 @@ push to main
   -> GitHub Actions tests
   -> Docker image builds
   -> image pushed to GHCR
-  -> manifest repo updated
-  -> Argo CD deploys
+  -> reviewed registry PR
+  -> Argo CD reads the application package at an exact commit
 ```
 
 ## Example GitHub Actions Workflow
@@ -46,14 +46,13 @@ jobs:
           tags: ghcr.io/YOUR_USER/YOUR_APP:${{ github.sha }}
 ```
 
-For a new application, either:
+For a new personal application, keep its Kustomize package and package CI in
+the application repository. Add one production registration under
+`k8s/registry/<app>/production.json`; the shared ApplicationSet creates the
+Argo CD Application. The application's publication workflow submits a reviewed
+PR that changes only that registration's source revision and immutable runtime
+release identity.
 
-- update a Helm values file in this repo from the workflow, or
-- install Argo CD Image Updater later.
-
-Start with the first option. It is explicit and easy to debug.
-
-The job information collector implements the explicit manifest-update model
-with immutable digests, a reviewed promotion, and Argo CD reconciliation. Its
-credential boundary and verification procedure are documented in
-[`08-job-info-collector.md`](08-job-info-collector.md).
+The ownership contract, candidate schema, private-repository credential,
+migration boundary, and onboarding procedure are documented in
+[`08-application-registry.md`](08-application-registry.md).
