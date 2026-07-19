@@ -192,6 +192,48 @@ attach an Argo CD hook annotation, add the template to Kustomize, or invoke it
 from CI. The application repository's discovery operations guide defines the
 request, persistence, exit-status, and failure-handling contracts.
 
+## Milestone 7 detail worker
+
+Milestone 7 adds one independently managed `detail-worker` Deployment. It
+continuously drains eligible rows already present in `posting_registry`; it
+does not run discovery, create a schedule, or add the Milestone 8 scheduler.
+The `Recreate` strategy and one replica preserve the V1 concurrency contract.
+Kustomize copies the accepted application image, version, revision, and digest
+into both the Deployment and its pod template, so an application promotion
+rolls the worker without introducing a second release authority.
+
+The pod runs as UID/GID 10001 with a read-only root filesystem, no service
+account token, no volumes, dropped capabilities, bounded resources, a
+90-second termination grace period, and process probes. It receives only the
+existing PostgreSQL and MinIO Secret keys. Configuration fixes source detail
+requests at one job ID at a time, a 30-second timeout, a one-to-two-second host
+share delay, a five-second idle poll, a 60-second claim lease, and bounded
+one-to-ten-second retry backoff.
+
+The namespace default-deny policy remains in force. The worker-specific policy
+allows only cluster DNS, PostgreSQL TCP/5432, MinIO TCP/9000, and public
+TCP/443. Private, loopback, link-local, Tailscale, benchmark, multicast, and
+reserved IPv4 ranges are excluded from the public rule. Kubernetes
+NetworkPolicy cannot select the Walmart HTTPS hostname, so review the public
+TCP/443 limitation with every workload change.
+
+Before merging the workload or deliberately introducing source work, inspect
+the durable queue read-only. An empty result proves that rollout is idle-safe;
+it does not satisfy the bounded-processing acceptance test:
+
+```sql
+SELECT persistence_state, failure_state, count(*)
+FROM posting_registry
+GROUP BY persistence_state, failure_state
+ORDER BY persistence_state, failure_state;
+```
+
+Do not insert synthetic production rows, clear a claim or failure counter, or
+start the opt-in discovery Job merely to make the worker active. A bounded
+production observation requires a separately approved eligible posting and
+must retain the attempt, raw-object, and normalized lineage evidence described
+by the application repository's detail-worker operations guide.
+
 ## Release identity
 
 Application release values live together in
@@ -271,6 +313,13 @@ kubectl -n job-info-collector get job/job-info-collector-database-migration
 kubectl -n job-info-collector logs job/job-info-collector-database-migration
 kubectl -n job-info-collector get job/job-info-collector-release-verification
 kubectl -n job-info-collector logs job/job-info-collector-release-verification
+kubectl -n job-info-collector rollout status \
+  deployment/job-info-collector-detail-worker --timeout=5m
+kubectl -n job-info-collector get deployment/job-info-collector-detail-worker
+kubectl -n job-info-collector get pod \
+  -l app.kubernetes.io/component=detail-worker
+kubectl -n job-info-collector logs \
+  deployment/job-info-collector-detail-worker --tail=100
 kubectl -n job-info-collector get pod \
   -l app.kubernetes.io/component=release-verification \
   -o jsonpath='{.items[0].spec.containers[0].image}{"\n"}'
@@ -284,6 +333,14 @@ its log must end with `service verification succeeded (postgresql and object
 store; no writes)`. The migration Job annotations and image must match the
 migration-release ConfigMap, and its log must end with `database migrations
 applied`.
+
+The detail-worker Deployment must have one available replica and zero pod
+restarts, and the pod `imageID` digest, version label, source-revision
+annotation, and image-digest annotation must match the application release
+ConfigMap. Healthy idle logs contain only structured lifecycle and queue-state
+metadata. They must not contain credentials, authorization data, cookies, or
+response bodies. Confirm Argo CD reports `Synced` and `Healthy` at the merged
+GitOps revision after checking the workload.
 
 Argo CD retains the completed Job for inspection. The next release deletes it
 immediately before creating the new PostSync verification Job. A failed Job
@@ -340,7 +397,8 @@ promotion commit. Never revert `migration-release.yaml` or reduce its
 `migrationGeneration`; database migrations remain forward-only. After the
 application revert, Argo CD first runs the latest monotonic migration image as a
 safe no-op, then verifies the older application digest against the forward
-schema. Each application release must remain compatible with that schema under
+schema and rolls the detail worker to the same older application digest. Each
+application release must remain compatible with that schema under
 the expand-and-contract policy. Never repair release state by changing a live
 Job, applying a tag, or pushing directly to `main`.
 
@@ -357,8 +415,8 @@ live application remains on the deliberately reverted identity.
 Later collector milestones extend this same Argo CD Application rather than
 creating parallel deployment paths:
 
-- Milestones 6 through 8 add finite discovery/operator Jobs, the detail-worker
-  Deployment, and then the scheduler Deployment as their commands become real.
+- Milestone 8 adds the scheduler Deployment alongside the finite discovery
+  operator path and the Milestone 7 detail-worker Deployment.
 - Milestone 9 reuses the PostgreSQL and MinIO Secret references introduced by
   finite Milestone 4/5 hooks for runtime workloads, and adds the runtime
   ConfigMap, ServiceMonitor, PrometheusRule, resource tuning, and recovery
