@@ -98,11 +98,17 @@ another registration path. Exit status 3 means the candidate requires a
 separate migration registration and no runtime update was written. Merging a
 runtime PR is the deployment approval.
 
-If the candidate's migration head differs from the registered head, accept a
-separate forward-only migration update first. That reviewed change supplies
-publication evidence for the migration image, increments `generation` exactly
-once, and must pass the image ancestry gate. Runtime rollback changes only the
-source/runtime release fields and never moves the migration ledger backward.
+If the candidate's migration head differs from the registered head, application
+automation invokes the same updater with `--component migration`. That mode
+changes only the migration ledger, supplies publication evidence for the
+migration image, and increments `generation` exactly once. Automation opens or
+reuses a migration-only PR and prepares the dependent runtime PR as a draft.
+Both branches remain subject to the registry and image ancestry gates.
+
+Merge the migration PR first and verify its Argo CD migration hook succeeds.
+Only then mark the prepared runtime PR ready and merge it. Automation never
+merges either PR. Runtime rollback changes only the source/runtime release
+fields and never moves the migration ledger backward.
 
 ## Argo CD reconciliation
 

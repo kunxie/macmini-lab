@@ -14,6 +14,7 @@ from update_application_release import (
     RegistryError,
     _load_json,
     main,
+    update_migration_registration,
     update_registration,
     validate_candidate,
 )
@@ -81,6 +82,9 @@ class RegistryUpdaterTests(unittest.TestCase):
         with self.assertRaisesRegex(RegistryError, "image repository"):
             update_registration(self.registration, wrong_image)
 
+        with self.assertRaisesRegex(RegistryError, "image repository"):
+            update_migration_registration(self.registration, wrong_image)
+
     def test_invalid_or_mutable_candidate_identity_is_rejected(self) -> None:
         invalid = candidate()
         invalid["imageDigest"] = "latest"
@@ -104,6 +108,33 @@ class RegistryUpdaterTests(unittest.TestCase):
         current["migration"]["generation"] += 1
         with self.assertRaisesRegex(RegistryError, "increment generation exactly once"):
             validate_history(current, previous)
+
+    def test_migration_update_changes_only_forward_migration_ledger(self) -> None:
+        pending = candidate()
+        pending["migration"] = {"kind": "alembic", "head": "0002_next"}
+        original_source = copy.deepcopy(self.registration["source"])
+        original_release = copy.deepcopy(self.registration["release"])
+        original_generation = self.registration["migration"]["generation"]
+
+        updated, changed = update_migration_registration(
+            self.registration, pending
+        )
+
+        self.assertTrue(changed)
+        self.assertEqual(updated["source"], original_source)
+        self.assertEqual(updated["release"], original_release)
+        self.assertEqual(updated["migration"]["head"], "0002_next")
+        self.assertEqual(
+            updated["migration"]["generation"], original_generation + 1
+        )
+        self.assertEqual(updated["migration"]["sourceRevision"], "a" * 40)
+        self.assertEqual(
+            updated["migration"]["imageDigest"], f"sha256:{'b' * 64}"
+        )
+
+        repeated, repeated_changed = update_migration_registration(updated, pending)
+        self.assertFalse(repeated_changed)
+        self.assertEqual(repeated, updated)
 
     def test_cli_defers_runtime_update_until_migration_is_registered(self) -> None:
         pending = candidate()
@@ -135,6 +166,48 @@ class RegistryUpdaterTests(unittest.TestCase):
             self.assertEqual(
                 output_path.read_text(encoding="utf-8"),
                 "changed=false\nmigration_required=true\n",
+            )
+
+    def test_cli_writes_a_migration_only_registration(self) -> None:
+        pending = candidate()
+        pending["migration"] = {"kind": "alembic", "head": "0002_next"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            registration_path = root / "production.json"
+            candidate_path = root / "candidate.json"
+            output_path = root / "output"
+            registration_path.write_text(
+                f"{json.dumps(self.registration, indent=2)}\n", encoding="utf-8"
+            )
+            candidate_path.write_text(
+                f"{json.dumps(pending, indent=2)}\n", encoding="utf-8"
+            )
+
+            status = main(
+                [
+                    "--registration",
+                    str(registration_path),
+                    "--candidate",
+                    str(candidate_path),
+                    "--component",
+                    "migration",
+                    "--github-output",
+                    str(output_path),
+                ]
+            )
+
+            self.assertEqual(status, 0)
+            written = json.loads(registration_path.read_text(encoding="utf-8"))
+            self.assertEqual(written["source"], self.registration["source"])
+            self.assertEqual(written["release"], self.registration["release"])
+            self.assertEqual(written["migration"]["head"], "0002_next")
+            self.assertEqual(
+                written["migration"]["generation"],
+                self.registration["migration"]["generation"] + 1,
+            )
+            self.assertEqual(
+                output_path.read_text(encoding="utf-8"),
+                "changed=true\nmigration_required=false\n",
             )
 
     def test_image_gate_checks_the_previous_migration_head(self) -> None:

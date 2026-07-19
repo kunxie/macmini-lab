@@ -292,10 +292,10 @@ def validate_registration(registration: dict[str, Any]) -> None:
     )
 
 
-def update_registration(
+def _validate_update_boundary(
     registration: dict[str, Any], candidate: dict[str, Any]
-) -> tuple[dict[str, Any], bool]:
-    """Return a registry copy with only source and runtime release fields updated."""
+) -> None:
+    """Require a candidate to stay inside one registered application boundary."""
     validate_registration(registration)
     validate_candidate(candidate)
     source = _object(registration, "source", "registration")
@@ -306,6 +306,13 @@ def update_registration(
         raise RegistryError("candidate source repository does not match registration")
     if candidate["imageRepository"] != release["imageRepository"]:
         raise RegistryError("candidate image repository does not match registration")
+
+
+def update_registration(
+    registration: dict[str, Any], candidate: dict[str, Any]
+) -> tuple[dict[str, Any], bool]:
+    """Return a registry copy with only source and runtime release fields updated."""
+    _validate_update_boundary(registration, candidate)
 
     updated = copy.deepcopy(registration)
     updated["source"]["revision"] = candidate["sourceRevision"]
@@ -322,6 +329,38 @@ def update_registration(
         "publicationRecordSha256": evidence["publicationRecordSha256"],
         "publicationRun": evidence["publicationRun"],
         "ciRun": evidence["ciRun"],
+    }
+    validate_registration(updated)
+    return updated, updated != registration
+
+
+def update_migration_registration(
+    registration: dict[str, Any], candidate: dict[str, Any]
+) -> tuple[dict[str, Any], bool]:
+    """Return a copy with only a new forward migration identity registered."""
+    _validate_update_boundary(registration, candidate)
+    current = _object(registration, "migration", "registration")
+    requested = _object(candidate, "migration", "candidate")
+    if requested["head"] == current["head"]:
+        return copy.deepcopy(registration), False
+
+    evidence = _object(candidate, "evidence", "candidate")
+    updated = copy.deepcopy(registration)
+    updated["migration"] = {
+        "version": candidate["version"],
+        "releaseKind": candidate["releaseKind"],
+        "sourceRevision": candidate["sourceRevision"],
+        "sourceCreatedAt": candidate["sourceCreatedAt"],
+        "imageRepository": candidate["imageRepository"],
+        "imageDigest": candidate["imageDigest"],
+        "image": candidate["image"],
+        "platform": candidate["platform"],
+        "publicationRecordSha256": evidence["publicationRecordSha256"],
+        "publicationRun": evidence["publicationRun"],
+        "ciRun": evidence["ciRun"],
+        "kind": requested["kind"],
+        "head": requested["head"],
+        "generation": current["generation"] + 1,
     }
     validate_registration(updated)
     return updated, updated != registration
@@ -362,6 +401,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", required=True, type=safe_path)
     parser.add_argument("--candidate", required=True, type=safe_path)
+    parser.add_argument(
+        "--component",
+        choices=("release", "migration"),
+        default="release",
+        help="registry ledger to update (default: release)",
+    )
     parser.add_argument("--github-output", type=safe_path)
     return parser.parse_args(argv)
 
@@ -371,10 +416,17 @@ def main(argv: list[str] | None = None) -> int:
     try:
         registration = _load_json(args.registration, "registration")
         candidate = _load_json(args.candidate, "candidate")
-        updated, changed = update_registration(registration, candidate)
-        migration_required = (
-            candidate["migration"]["head"] != registration["migration"]["head"]
-        )
+        if args.component == "migration":
+            updated, changed = update_migration_registration(
+                registration, candidate
+            )
+            migration_required = False
+        else:
+            updated, changed = update_registration(registration, candidate)
+            migration_required = (
+                candidate["migration"]["head"]
+                != registration["migration"]["head"]
+            )
         if args.github_output is not None:
             write_github_output(
                 args.github_output,
