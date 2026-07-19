@@ -566,6 +566,14 @@ validate_exact_detail_worker_runtime() {
           value: json
         - name: JIC_LOG_LEVEL
           value: INFO
+        - name: JIC_ALERT_POPULATION_CHANGE_ABSOLUTE
+          value: "500"
+        - name: JIC_ALERT_POPULATION_CHANGE_PERCENT
+          value: "20"
+        - name: JIC_ALERT_ELIGIBLE_QUEUE_DEPTH
+          value: "5000"
+        - name: JIC_ALERT_OLDEST_ELIGIBLE_ITEM_AGE_SECONDS
+          value: "3600"
         - name: JIC_SOURCE_BASE_URL
           value: https://careers.walmart.com
         - name: JIC_SOURCE_GRAPHQL_ENDPOINT
