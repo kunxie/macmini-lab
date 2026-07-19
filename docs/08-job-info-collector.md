@@ -210,6 +210,12 @@ requests at one job ID at a time, a 30-second timeout, a one-to-two-second host
 share delay, a five-second idle poll, a 60-second claim lease, and bounded
 one-to-ten-second retry backoff.
 
+The version-controlled production alert baseline signals a population change
+above 500 records or 20 percent, an eligible queue above 5,000 rows, or an
+oldest eligible item above 3,600 seconds. These values are deployment inputs,
+not universal application defaults; change them only through a reviewed GitOps
+pull request with updated capacity evidence.
+
 The namespace default-deny policy remains in force. The worker-specific policy
 allows only cluster DNS, PostgreSQL TCP/5432, MinIO TCP/9000, and public
 TCP/443. Private, loopback, link-local, Tailscale, benchmark, multicast, and
