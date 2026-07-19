@@ -31,6 +31,9 @@ An application repository exposes a Kustomization at the registered
 - use `platform-runtime-image` for the approved runtime image;
 - use `platform-migration-image` for the independently retained migration
   image when the application has a forward-only migration hook;
+- contain a persistent, non-hook `NetworkPolicy` named
+  `<application>-default-deny` so the platform can trigger a migration sync
+  without changing a workload;
 - declare its own resource limits, security contexts, network policies, hooks,
   probes, and Secret key references; and
 - render and schema-check the package in application CI.
@@ -105,10 +108,13 @@ migration image, and increments `generation` exactly once. Automation opens or
 reuses a migration-only PR and prepares the dependent runtime PR as a draft.
 Both branches remain subject to the registry and image ancestry gates.
 
-Merge the migration PR first and verify its Argo CD migration hook succeeds.
-Only then mark the prepared runtime PR ready and merge it. Automation never
-merges either PR. Runtime rollback changes only the source/runtime release
-fields and never moves the migration ledger backward.
+Merge the migration PR first and verify that Argo CD creates a new migration
+Job from the registered migration digest and that the Job reaches the new
+head. `Synced` and `Healthy` alone are insufficient evidence because an old,
+completed hook can still exist. Only then mark the prepared runtime PR ready
+and merge it. Automation never merges either PR. Runtime rollback changes only
+the source/runtime release fields and never moves the migration ledger
+backward.
 
 ## Argo CD reconciliation
 
@@ -118,6 +124,15 @@ repository at its exact revision, renders the registered path, and injects the
 runtime and migration digests. Removing a registry entry preserves its
 resources by default; decommissioning is therefore a separate, explicit
 operator procedure.
+
+Argo CD does not treat a changed PreSync hook by itself as persistent drift.
+The ApplicationSet therefore patches the migration `generation` onto only the
+application's persistent `<application>-default-deny` NetworkPolicy metadata.
+Each reviewed migration generation makes the Application OutOfSync and runs
+the PreSync hook, while leaving runtime images, pod templates, and selectors
+unchanged. Application package CI must preserve that named non-hook policy;
+using Kustomize `commonAnnotations` for this trigger is forbidden because it
+would restart workload pods.
 
 The initial collector cutover replaces a legacy hand-written Application that
 has no cascade-deletion finalizer. Its existing workloads remain while the

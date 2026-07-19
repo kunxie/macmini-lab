@@ -38,6 +38,19 @@ spec:
           images:
             - "platform-runtime-image={{ .release.image }}"
             - "platform-migration-image={{ .migration.image }}"
+          patches:
+            - target:
+                group: networking.k8s.io
+                version: v1
+                kind: NetworkPolicy
+                name: "{{ .name }}-default-deny"
+              patch: |-
+                apiVersion: networking.k8s.io/v1
+                kind: NetworkPolicy
+                metadata:
+                  name: "{{ .name }}-default-deny"
+                  annotations:
+                    platform.kunxie.dev/migration-generation: "{{ .migration.generation }}"
       destination:
         server: "{{ .destination.server }}"
         namespace: "{{ .destination.namespace }}"

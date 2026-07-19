@@ -26,8 +26,11 @@ The root Application watches only `k8s/argocd/applications`. Infrastructure
 child Applications point at pinned Helm charts and read their values from
 `k8s/infra`. The personal ApplicationSet reads `k8s/registry`, then points each
 generated Application at an exact revision and Kustomize path in its own
-repository. Apply the root once with `scripts/k8s/33-bootstrap-gitops.sh`;
-Argo CD handles subsequent changes from `main`.
+repository. A migration generation patches only the application's persistent
+`<application>-default-deny` NetworkPolicy metadata, which gives Argo CD a safe
+drift target for running the PreSync hook without restarting runtime pods.
+Apply the root once with `scripts/k8s/33-bootstrap-gitops.sh`; Argo CD handles
+subsequent changes from `main`.
 
 The registry contract, onboarding flow, private-repository credential, and
 release procedure are documented in
