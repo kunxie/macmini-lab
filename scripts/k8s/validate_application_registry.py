@@ -124,6 +124,41 @@ def _base_registration(base_ref: str, relative_path: Path) -> dict[str, Any] | N
     return value
 
 
+def _validate_migration_sync_trigger(application_set: str) -> None:
+    """Require a persistent, metadata-only drift target for migration hooks."""
+    expected_patch = '''          patches:
+            - target:
+                group: networking.k8s.io
+                version: v1
+                kind: NetworkPolicy
+                name: "{{ .name }}-default-deny"
+              patch: |-
+                apiVersion: networking.k8s.io/v1
+                kind: NetworkPolicy
+                metadata:
+                  name: "{{ .name }}-default-deny"
+                  annotations:
+                    platform.kunxie.dev/migration-generation: "{{ .migration.generation }}"
+'''
+    if expected_patch not in application_set:
+        raise RegistryError(
+            "personal ApplicationSet must patch only the persistent default-deny "
+            "NetworkPolicy with the migration generation"
+        )
+    generation_annotation = (
+        'platform.kunxie.dev/migration-generation: "{{ .migration.generation }}"'
+    )
+    if application_set.count(generation_annotation) != 2:
+        raise RegistryError(
+            "personal ApplicationSet must expose the migration generation on the "
+            "Application and its persistent sync trigger"
+        )
+    if "commonAnnotations:" in application_set:
+        raise RegistryError(
+            "migration sync trigger must not annotate workload pod templates"
+        )
+
+
 def _validate_platform_templates() -> None:
     application_set = APPLICATION_SET.read_text(encoding="utf-8")
     project = PROJECT.read_text(encoding="utf-8")
@@ -142,6 +177,7 @@ def _validate_platform_templates() -> None:
             raise RegistryError(
                 f"personal ApplicationSet is missing required contract: {expected}"
             )
+    _validate_migration_sync_trigger(application_set)
     required_project_text = (
         "name: personal-apps",
         "https://github.com/kunxie/*.git",
