@@ -30,6 +30,38 @@ kubectl -n observability get pods
 kubectl -n observability get pvc
 ```
 
+## Pod Log Collection
+
+Alloy runs as a DaemonSet and mounts the node's `/var/log` directory read-only.
+It discovers only Pods assigned to its own node, resolves their CRI log files
+under `/var/log/pods`, and tails those files with `loki.source.file` before
+forwarding records to Loki.
+
+Do not replace this with cluster-wide `loki.source.kubernetes` collection on
+the single node. That component opens a Kubernetes API log reader for every
+container target. The kubelet backs each active follow request with a file
+watcher, so the readers can exhaust Ubuntu's shared inotify instance budget
+and return errors such as:
+
+```text
+failed to create fsnotify watcher: too many open files
+```
+
+If collection becomes unhealthy, compare the node limit with the number of
+running container targets and inspect Alloy for reconnect loops:
+
+```bash
+sysctl fs.inotify.max_user_instances
+kubectl get pods -A -o json \
+  | jq '[.items[].spec.containers[]] | length'
+kubectl -n observability logs daemonset/alloy -c alloy --since=5m
+```
+
+Repeated `opened log stream` messages for every target indicate API-stream
+collection or reconnect churn. With file collection, confirm the Alloy Pod has
+a read-only `/var/log` mount and that `loki.source.file.pod_logs` is healthy in
+the Alloy component UI.
+
 ## Access Grafana
 
 For local access:

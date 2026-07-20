@@ -7,11 +7,24 @@ serviceMonitor:
   enabled: false
 
 alloy:
+  mounts:
+    # Read the node's CRI log files directly. Tailing every container through
+    # the Kubernetes API creates one kubelet log-follow stream per target and
+    # can exhaust the node's inotify instance budget.
+    varlog: true
+
   configMap:
     create: true
     content: |
       discovery.kubernetes "pods" {
         role = "pod"
+
+        // One DaemonSet Pod owns the files from its node only. This also keeps
+        // the configuration correct if the cluster gains another node later.
+        selectors {
+          role  = "pod"
+          field = "spec.nodeName=" + sys.env("K8S_NODE_NAME")
+        }
       }
 
       discovery.relabel "pod_logs" {
@@ -36,10 +49,21 @@ alloy:
           source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
           target_label  = "app"
         }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          target_label  = "__path__"
+          separator     = "/"
+          replacement   = "/var/log/pods/*$1/*.log"
+        }
       }
 
-      loki.source.kubernetes "pod_logs" {
-        targets    = discovery.relabel.pod_logs.output
+      local.file_match "pod_logs" {
+        path_targets = discovery.relabel.pod_logs.output
+      }
+
+      loki.source.file "pod_logs" {
+        targets    = local.file_match.pod_logs.targets
         forward_to = [loki.process.pod_logs.receiver]
       }
 
