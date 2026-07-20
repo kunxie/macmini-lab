@@ -7,6 +7,7 @@ import copy
 import json
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import call, patch
 
@@ -98,8 +99,13 @@ class RegistryUpdaterTests(unittest.TestCase):
     def test_migration_history_is_monotonic_and_separate(self) -> None:
         previous = copy.deepcopy(self.registration)
         current = copy.deepcopy(previous)
+        previous_source_time = datetime.strptime(
+            previous["migration"]["sourceCreatedAt"], "%Y-%m-%dT%H:%M:%SZ"
+        )
         current["migration"]["sourceRevision"] = "d" * 40
-        current["migration"]["sourceCreatedAt"] = "2026-07-20T00:00:00Z"
+        current["migration"]["sourceCreatedAt"] = (
+            previous_source_time + timedelta(seconds=1)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
         current["migration"]["imageDigest"] = f"sha256:{'e' * 64}"
         current["migration"]["image"] = (
             f"ghcr.io/kunxie/job-info-collector@{current['migration']['imageDigest']}"
