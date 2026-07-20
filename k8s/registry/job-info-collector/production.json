@@ -28,17 +28,17 @@
   "migration": {
     "version": "0.8.0.dev0",
     "releaseKind": "development",
-    "sourceRevision": "568bee8f299090593d3b16fbaefd0432e748dad5",
-    "sourceCreatedAt": "2026-07-19T23:16:14Z",
+    "sourceRevision": "fc3158e40cb951bd038df502da83e8be9d870990",
+    "sourceCreatedAt": "2026-07-20T19:14:22Z",
     "imageRepository": "ghcr.io/kunxie/job-info-collector",
-    "imageDigest": "sha256:b7f2095ac1fd6fae79fde33c70d90880722b2f9fa98268b259d24514763e470c",
-    "image": "ghcr.io/kunxie/job-info-collector@sha256:b7f2095ac1fd6fae79fde33c70d90880722b2f9fa98268b259d24514763e470c",
+    "imageDigest": "sha256:ad4f5210c30f3218a270c80c8ff55832de3963477c51fb523956626b945e13ca",
+    "image": "ghcr.io/kunxie/job-info-collector@sha256:ad4f5210c30f3218a270c80c8ff55832de3963477c51fb523956626b945e13ca",
     "platform": "linux/arm64",
-    "publicationRecordSha256": "c71aa503c9d0c4a8b5b3192a51353fd1d21b71ab99e6ea757b18b17af181f20c",
-    "publicationRun": "https://github.com/kunxie/job-info-collector/actions/runs/29707708910",
-    "ciRun": "https://github.com/kunxie/job-info-collector/actions/runs/29707644359",
+    "publicationRecordSha256": "249a2ce862eb59899550e9c1d851d0f3fa915ee5fe2fa90532d89aa60708836e",
+    "publicationRun": "https://github.com/kunxie/job-info-collector/actions/runs/29771355303",
+    "ciRun": "https://github.com/kunxie/job-info-collector/actions/runs/29771160552",
     "kind": "alembic",
-    "head": "0002_milestone_8_scheduling",
-    "generation": 2
+    "head": "0003_milestone_9_reconciliation",
+    "generation": 3
   }
 }
