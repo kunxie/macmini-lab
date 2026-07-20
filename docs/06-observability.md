@@ -9,6 +9,11 @@ Use a small Grafana stack for the initial single-node K3s cluster.
 - Loki for log storage.
 - Grafana Alloy for collecting Kubernetes pod logs and sending them to Loki.
 
+Prometheus discovers release-labeled ServiceMonitors and PrometheusRules from
+the `observability` and `job-info-collector` namespaces. Add another namespace
+to both explicit selectors only in a reviewed platform change; application
+resources do not receive cluster-wide monitoring discovery by default.
+
 Do not install tracing on day one. Add Tempo and OpenTelemetry Collector later
 when multiple services need request-level tracing.
 

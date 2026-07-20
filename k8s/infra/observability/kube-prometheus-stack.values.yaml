@@ -44,6 +44,20 @@ prometheus:
   prometheusSpec:
     scrapeInterval: 60s
     evaluationInterval: 60s
+    serviceMonitorNamespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - observability
+            - job-info-collector
+    ruleNamespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - observability
+            - job-info-collector
     retention: 7d
     retentionSize: 15GB
     storageSpec:
