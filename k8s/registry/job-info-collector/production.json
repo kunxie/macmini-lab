@@ -6,24 +6,24 @@
     "repository": "kunxie/job-info-collector",
     "repoURL": "https://github.com/kunxie/job-info-collector.git",
     "path": "deploy/overlays/macmini-lab",
-    "revision": "fc3158e40cb951bd038df502da83e8be9d870990"
+    "revision": "909f7597ec800a5736007096981102b19a6e0bd7"
   },
   "destination": {
     "server": "https://kubernetes.default.svc",
     "namespace": "job-info-collector"
   },
   "release": {
-    "version": "0.8.0.dev0",
+    "version": "1.0.0.dev0",
     "releaseKind": "development",
-    "sourceRevision": "fc3158e40cb951bd038df502da83e8be9d870990",
-    "sourceCreatedAt": "2026-07-20T19:14:22Z",
+    "sourceRevision": "909f7597ec800a5736007096981102b19a6e0bd7",
+    "sourceCreatedAt": "2026-07-21T20:58:13Z",
     "imageRepository": "ghcr.io/kunxie/job-info-collector",
-    "imageDigest": "sha256:ad4f5210c30f3218a270c80c8ff55832de3963477c51fb523956626b945e13ca",
-    "image": "ghcr.io/kunxie/job-info-collector@sha256:ad4f5210c30f3218a270c80c8ff55832de3963477c51fb523956626b945e13ca",
+    "imageDigest": "sha256:233877aa9ce9eae07eaf8f3235468d6303bfa45c19fbbc3d4023e02c6252ee8b",
+    "image": "ghcr.io/kunxie/job-info-collector@sha256:233877aa9ce9eae07eaf8f3235468d6303bfa45c19fbbc3d4023e02c6252ee8b",
     "platform": "linux/arm64",
-    "publicationRecordSha256": "249a2ce862eb59899550e9c1d851d0f3fa915ee5fe2fa90532d89aa60708836e",
-    "publicationRun": "https://github.com/kunxie/job-info-collector/actions/runs/29771355303",
-    "ciRun": "https://github.com/kunxie/job-info-collector/actions/runs/29771160552"
+    "publicationRecordSha256": "7ffad12dea9a54c8df11bfc04d4c3c34e8e4d6519716928d5849793ae4748d7c",
+    "publicationRun": "https://github.com/kunxie/job-info-collector/actions/runs/29868215098",
+    "ciRun": "https://github.com/kunxie/job-info-collector/actions/runs/29868026919"
   },
   "migration": {
     "version": "0.8.0.dev0",
