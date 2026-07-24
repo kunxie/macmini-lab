@@ -23,10 +23,12 @@ tenant:
 
   buckets:
     - name: job-info-collector
+    - name: video-vault
     - name: postgres-backups
 
   users:
     - name: job-info-collector-minio-credentials
+    - name: video-vault-minio-credentials
 
   metrics:
     enabled: true

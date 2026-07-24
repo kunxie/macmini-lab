@@ -22,6 +22,11 @@ cluster:
       login: true
       passwordSecret:
         name: job-info-collector-db-credentials
+    - name: video-vault
+      ensure: present
+      login: true
+      passwordSecret:
+        name: video-vault-db-credentials
   monitoring:
     enabled: true
   initdb:
@@ -29,6 +34,11 @@ cluster:
     owner: job-info-collector
     secret:
       name: job-info-collector-db-credentials
+
+databases:
+  - name: video-vault
+    owner: video-vault
+    databaseReclaimPolicy: retain
 
 backups:
   enabled: true
