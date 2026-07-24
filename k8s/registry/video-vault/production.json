@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "name": "video-vault",
+  "project": "personal-apps",
+  "source": {
+    "repository": "kunxie/video-vault",
+    "repoURL": "https://github.com/kunxie/video-vault.git",
+    "path": "deploy/overlays/macmini-lab",
+    "revision": "245b6b8eb207cca0009fd68e853284985f166c82"
+  },
+  "destination": {
+    "server": "https://kubernetes.default.svc",
+    "namespace": "video-vault"
+  },
+  "release": {
+    "version": "0.1.0",
+    "releaseKind": "stable",
+    "sourceRevision": "245b6b8eb207cca0009fd68e853284985f166c82",
+    "sourceCreatedAt": "2026-07-24T00:23:51Z",
+    "imageRepository": "ghcr.io/kunxie/video-vault",
+    "imageDigest": "sha256:bbd347f7889896ee5528f1b593b2022734180057e0a420fd4b7b60a44ba8e242",
+    "image": "ghcr.io/kunxie/video-vault@sha256:bbd347f7889896ee5528f1b593b2022734180057e0a420fd4b7b60a44ba8e242",
+    "platform": "linux/arm64",
+    "publicationRecordSha256": "c52d22ca3cfde7f055b01b992c022ad4fb6d83b19fb8f603ae99aa6ed62180c3",
+    "publicationRun": "https://github.com/kunxie/video-vault/actions/runs/30056135353",
+    "ciRun": "https://github.com/kunxie/video-vault/actions/runs/30056064796"
+  },
+  "migration": {
+    "version": "0.1.0",
+    "releaseKind": "stable",
+    "sourceRevision": "245b6b8eb207cca0009fd68e853284985f166c82",
+    "sourceCreatedAt": "2026-07-24T00:23:51Z",
+    "imageRepository": "ghcr.io/kunxie/video-vault",
+    "imageDigest": "sha256:bbd347f7889896ee5528f1b593b2022734180057e0a420fd4b7b60a44ba8e242",
+    "image": "ghcr.io/kunxie/video-vault@sha256:bbd347f7889896ee5528f1b593b2022734180057e0a420fd4b7b60a44ba8e242",
+    "platform": "linux/arm64",
+    "publicationRecordSha256": "c52d22ca3cfde7f055b01b992c022ad4fb6d83b19fb8f603ae99aa6ed62180c3",
+    "publicationRun": "https://github.com/kunxie/video-vault/actions/runs/30056135353",
+    "ciRun": "https://github.com/kunxie/video-vault/actions/runs/30056064796",
+    "kind": "alembic",
+    "head": "0001_initial",
+    "generation": 1
+  }
+}
